@@ -1,12 +1,18 @@
-<template lang="">
-  <div>INDEX</div>
+<template>
+  <div>
+    <view_excel></view_excel>
+
+
+  </div>
 </template>
 <script>
-import navbar from '@/components/navbar'
+import view_excel from '@/components/view_excel.vue'
 export default {
-
+  components: {
+    view_excel
+  }
 }
 </script>
-<style lang="">
+<style >
 
 </style>

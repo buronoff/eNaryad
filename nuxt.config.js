@@ -4,7 +4,7 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'ot_tb',
+    title: 'export_bvr',
     htmlAttrs: {
       lang: 'ru',
       translate:  'no'
@@ -42,7 +42,12 @@ export default {
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
     // Doc: https://www.primefaces.org/primevue/showcase-v2/#/setup
-    'primevue/nuxt',
+    ['primevue/nuxt',  {
+      theme: 'md-light-indigo',
+      ripple: true,
+      components: ['InputText','Button','DataTable','Dialog'],
+      directives: ['Tooltip','Badge']
+    }],
     '@nuxtjs/auth',
     '@nuxtjs/axios'
   ],
