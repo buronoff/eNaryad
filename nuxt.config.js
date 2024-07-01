@@ -43,10 +43,7 @@ export default {
   modules: [
     // Doc: https://www.primefaces.org/primevue/showcase-v2/#/setup
     ['primevue/nuxt',  {
-      theme: 'md-light-indigo',
-      ripple: true,
-      components: ['InputText','Button','DataTable','Dialog'],
-      directives: ['Tooltip','Badge']
+      theme: 'fluent-light'
     }],
     '@nuxtjs/auth',
     '@nuxtjs/axios'
