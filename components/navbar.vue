@@ -1,10 +1,5 @@
 <template>
-
   <Menubar :model="items">
-    <template #start>
-        <img alt="logo" src="@/static/img_logo.png" height="40" class="mr-2">
-    </template>
-
     <template #end>
       <Userbar />
     </template>
