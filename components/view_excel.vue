@@ -3,7 +3,7 @@ import FileUpload from 'primevue/fileupload';
 import Toast from 'primevue/toast';
 import Panel from 'primevue/panel';
 import Listbox from 'primevue/listbox';
-import {forEach} from "core-js/stable/dom-collections";
+
 export default  {
 
 components: {
@@ -21,8 +21,14 @@ components: {
   },
 
   methods: {
-    onUpload() {
-      this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
+    async onUpload() {
+      try {
+        this.$toast.add({severity: 'info', summary: 'Success', detail: 'File Uploaded', life: 3000});
+        // Здесь можно обработать ответ от сервера, например, обновить состояние компонента
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+
     },
 
   }
@@ -36,7 +42,7 @@ components: {
 
   <div class="grid">
     <div class="col-7">
-      <FileUpload mode="advanced" name="demo[]" @upload="onUpload" :multiple="true" accept=".xls,.xlsx" />
+      <FileUpload mode="advanced" name="file" url="upload" @upload="onUpload" :multiple="true" accept=".xls,.xlsx" />
     </div>
     <div class="col-5">
       <Panel header="Log">

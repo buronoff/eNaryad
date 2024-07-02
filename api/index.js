@@ -8,10 +8,17 @@ const rules_controller = require('./rules_controller')
 
 const app = express()
 
-
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+/* ЗАГРУЗКА ФАЙЛОВ */
+const upload = multer({ dest: 'uploads/' })
+
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ 'res': 'dd' });
+  //res.json({ file: req.file });
+});
+
 
 /* АВТОРИЗАЦИЯ */
 app.post('/auth/login',auth_controller.login);
