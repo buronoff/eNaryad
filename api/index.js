@@ -1,5 +1,6 @@
 const express = require('express')
 const bodyParser = require('body-parser');
+const multer = require('multer')
 
 const auth_controller = require('./auth_controller')
 const hadbook_controller = require('./handbook_controller')
