@@ -3,6 +3,11 @@ import FileUpload from 'primevue/fileupload';
 import Toast from 'primevue/toast';
 import Panel from 'primevue/panel';
 import Listbox from 'primevue/listbox';
+import Button from 'primevue/button';
+import ScrollPanel from 'primevue/scrollpanel';
+import Accordion from 'primevue/accordion';
+import AccordionTab from 'primevue/accordiontab';
+import Dropdown from 'primevue/dropdown';
 import {forEach} from "core-js/stable/dom-collections";
 
 export default  {
@@ -11,7 +16,12 @@ components: {
   FileUpload,
   Toast,
   Panel,
-  Listbox
+  Listbox,
+  Button,
+  ScrollPanel,
+  Accordion,
+  AccordionTab,
+  Dropdown
 },
 
   data(){
@@ -19,7 +29,10 @@ components: {
     selectedFile: null,
     uploadUrl: '/api/upload', // URL для загрузки файлов
     fileList: [], // Список файлов для загрузки
-    files_to_list: []
+    send_status: null, // 0-отправка  1-ок 2-ошибка 3-отказано
+    send_fileList: [],
+    karyer_list: ['Рудник Мурунтау', 'Карьер Бесапантау', 'Карьер Балпантау'],
+    karyer_name: null
 
   }
   },
@@ -27,49 +40,59 @@ components: {
   methods: {
     handleFileChange(event) {
       this.fileList.push(event.target.files);
-      this.files_to_list = []
-      for (let file of this.fileList) {
-        this.files_to_list.push(file[0])
-      }
-     },
-
-
-    async customUploadHandler(file) {
-      let files = file.files
-      for await (file of files) {
-        await this.sendFile(file)
-      }
     },
-    onFileUpload(event) {
-      // Обработка успешной загрузки файла
-      console.log('Файл(ы) успешно загружены:', event.files);
+
+    remove_file_to_list(index) {
+      this.fileList.splice(index, 1); // Удаление элемента по индексу
+    },
+
+
+    async upload_files() {
+      await this.clearDir()
+      let files = this.fileList
+      for await (let file of files) {
+        await this.sendFile(file[0])
+      }
+      this.fileList = []
     },
 
     async sendFile(file) {
-      let formData = new FormData(); // Инициализация, если необходимо
+      this.send_status = 0
 
-      // Пользовательская логика загрузки
-      formData.append('file', file); // Добавление файла в formData
+      this.send_fileList.push({'file': file.name, 'status':this.send_status, 'val': null})
 
-      // Выполнение фактической загрузки с использованием axios или fetch
+      let formData = new FormData();
+      formData.append('file', file);
       return this.$axios.post(this.uploadUrl, formData)
         .then(response => {
-          // Обработка успешного ответа от сервера
+          this.send_status = 1
+
+          let last_item = this.send_fileList[this.send_fileList.length - 1]
+          last_item.status = this.send_status
+
           console.log('Файл успешно загружен:', response.data);
           return response.data; // Возвращение данных, если необходимо
         })
         .catch(error => {
-          // Обработка ошибки загрузки
+          this.send_status = 3
+
+          let last_item = this.send_fileList[this.send_fileList.length - 1]
+          last_item.status = this.send_status
           console.error('Ошибка при загрузке файла:', error);
           throw error; // Проброс ошибки для дальнейшей обработки
         });
     },
 
-    selectFile(event){
-      this.fileList.push(event.files)
-      console.log(this.fileList)
+    async clearDir(){
+      return this.$axios.post('/api/clear_dir')
+        .then(response => {
+          return response.data; // Возвращение данных, если необходимо
+        })
+        .catch(error => {
+          console.error('Ошибка при загрузке файла:', error);
+          throw error; // Проброс ошибки для дальнейшей обработки
+        });
     }
-
 
   }
 
@@ -81,59 +104,68 @@ components: {
   <Toast />
 
   <div class="grid">
-    <div class="col-7">
-      <!--
-      <FileUpload mode="basic"
-                  accept=".xls,.xlsx"
-                  name="file"
-                  :auto="false"
-                  @uploader="customUploadHandler"
-                  :customUpload="true"
-                  chooseLabel="Добавить"
-                  uploadLabel="Загрузить"
-                  cancelLabel="Очистить"
+    <div class="col-6">
 
-                  />
-
-                  <FileUpload mode="basic"
-                        accept=".xls,.xlsx"
-                        name="file"
-                        :auto="false"
-                        @uploader="customUploadHandler"
-                        :customUpload="true"
-                        @select="selectFile"
-                        chooseLabel="Добавить"
-                        uploadLabel="Загрузить"
-                        cancelLabel="Очистить"
-
-            />
-      -->
       <Panel header="Log">
         <template #header>
           <div class="flex justify-content-between align-items-center w-full h-2rem">
-            <span style="font-weight: bold">Импорт файлов</span>
+            <span>Импорт файлов</span>
+            <div>
+              <Dropdown v-model="karyer_name" :options="karyer_list"  placeholder="Выберите карьер" />
+            </div>
+            <div>
+              <label class="input-file">
+                <input type="file" name="file" accept=".xls,.xlsx" @change="handleFileChange">
+                <span>Выберите файл</span>
+              </label>
+            </div>
           </div>
-          <div>
-           <label class="input-file">
-              <input type="file" name="file" accept=".xls,.xlsx" @change="handleFileChange">
-              <span>Выберите файл</span>
-            </label>
 
-            <!--<button @click="uploadFile">Загрузить</button>-->
-          </div>
         </template>
-        <Listbox v-model="selectedFile" :options="files_to_list" :optionLabel="files_to_list.file" />
+        <div class="flex flex-column justify-content-between h-full">
+          <div class="div_li_list mb-1">
+              <ul v-if="fileList.length > 0">
+                <li v-for="(file, index) in fileList" :key="index" class="li_list">
+                  <div class="flex justify-content-between align-items-center m-2">
+                    <div>{{ file[0].name }}</div>
+                    <div>
+                      <i class="pi pi-times" @click="remove_file_to_list(index)"></i>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <div class="flex justify-content-end">
+              <Button label="Загрузить" icon="pi pi-check" class="p-button-sm" @click="upload_files" />
+            </div>
+        </div>
 
       </Panel>
 
     </div>
-    <div class="col-5">
-      <Panel header="Log">
-        <template #header>
-          <div class="flex justify-content-between align-items-center w-full h-2rem">
-            <span style="font-weight: bold">Лог</span>
-          </div>
-        </template>
+    <div class="col-6">
+      <Panel header="Обработанные файлы">
+      <div class="div_send_list h-full">
+      <Accordion>
+        <AccordionTab v-for="(file, index) in this.send_fileList" :key="index" >
+          <template #header>
+            <div class="flex justify-content-between align-items-center flex-10">
+              <span>{{file.file}}</span>
+              <div>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              </div>
+              <div>
+                <i class="pi pi-spin pi-spinner" style="font-size: 1rem" v-if="file.status === 0" ></i>
+                <i class="pi pi-check-circle" style="font-size: 1rem; color: green" v-if="file.status === 1" ></i>
+                <i class="pi-info-circle" style="font-size: 1rem; color: orangered" v-if="file.status === 2" ></i>
+                <i class="pi-times-circle" style="font-size: 1rem; color: red" v-if="file.status === 3" ></i>
+              </div>
+            </div>
+          </template>
+          {{file.val}}
+        </AccordionTab>
+      </Accordion>
+      </div>
       </Panel>
     </div>
   </div>
@@ -144,14 +176,41 @@ components: {
 </template>
 
 <style>
-.p-panel-content {
-  height: 90vh;
+.p-accordion-header-link {
+  justify-content: space-between
+}
+
+.pi-times:hover {
+  border: 1px solid silver;
+}
+
+.li_list {
+  list-style: none;
+  border-bottom: 1px solid silver;
+}
+
+.li_list:hover {
+  color: red
+}
+
+.div_li_list {
+  overflow-y: auto;
+  border: 1px solid silver;
+  padding-right: 10px
 
 }
 
-.p-fileupload-content {
+.div_send_list {
+  overflow-y: auto;
+}
+
+.p-panel-header {
+  height: 4em
+}
+
+.p-panel-content {
   height: 90vh;
-  overflow-y: auto
+
 }
 
 .p-fileupload .p-fileupload-content {
@@ -188,7 +247,7 @@ components: {
   vertical-align: middle;
   color: rgb(255 255 255);
   text-align: center;
-  border-radius: 4px;
+  border-radius: 0px;
   background-color: #419152;
   line-height: 22px;
   height: 40px;

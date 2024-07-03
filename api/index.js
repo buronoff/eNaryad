@@ -2,6 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser');
 const multer = require('multer')
 const path = require('path');
+const fs = require('fs');
 const requestIp = require('request-ip');
 const auth_controller = require('./auth_controller')
 const hadbook_controller = require('./handbook_controller')
@@ -11,19 +12,53 @@ const app = express()
 app.use(requestIp.mw());
 
 /* ЗАГРУЗКА ФАЙЛОВ */
-const uploadDir = path.join(__dirname, 'excel_files');
+
+function ifExistsDir(dir_name){
+  let dir = path.join(__dirname, 'excel_files', dir_name)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+  return dir
+}
+
+function clearDir(dir_name){
+  let dir = path.join(__dirname, 'excel_files', dir_name)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+
+  fs.readdir(dir, (err, files) => {
+    if (err) {
+      console.error(`Ошибка чтения папки ${dir}:`, err);
+      return;
+    }
+
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      fs.unlink(filePath, err => {
+        if (err) {
+          console.error(`Ошибка удаления файла ${filePath}:`, err);
+        }
+      });
+    });
+  });
+
+  return dir
+}
+
 
 // Настройка хранилища для Multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    const ip = req.clientIp
+    let uploadDir = ifExistsDir(ip)
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const ip = req.clientIp
     const originalname = file.originalname;
     const utf8name = decodeURIComponent(escape(originalname));
 
-    cb(null, '['+ip+'] - ' + utf8name);
+    cb(null, utf8name);
   }
 });
 
@@ -31,6 +66,12 @@ const upload = multer({ storage: storage });
 
 app.post('/upload', upload.single('file'), (req, res) => {
   res.json({ file: req.files });
+});
+
+app.post('/clear_dir', (req, res) => {
+  const ip = req.clientIp
+  let uploadDir = clearDir(ip)
+  res.json({ res: 'папка для загрузки готова' });
 });
 
 
