@@ -2,11 +2,13 @@ const express = require('express')
 const bodyParser = require('body-parser');
 const multer = require('multer')
 const path = require('path');
+const requestIp = require('request-ip');
 const auth_controller = require('./auth_controller')
 const hadbook_controller = require('./handbook_controller')
 const rules_controller = require('./rules_controller')
 
 const app = express()
+app.use(requestIp.mw());
 
 /* ЗАГРУЗКА ФАЙЛОВ */
 const uploadDir = path.join(__dirname, 'excel_files');
@@ -17,18 +19,18 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
+    const ip = req.clientIp
     const originalname = file.originalname;
     const utf8name = decodeURIComponent(escape(originalname));
 
-    cb(null, utf8name);
+    cb(null, '['+ip+'] - ' + utf8name);
   }
 });
 
 const upload = multer({ storage: storage });
 
-app.post('/upload', upload.array('file', 100), (req, res) => {
-  res.json({ 'res': 'dd' });
-  //res.json({ file: req.file });
+app.post('/upload', upload.single('file'), (req, res) => {
+  res.json({ file: req.files });
 });
 
 
