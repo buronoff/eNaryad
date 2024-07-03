@@ -42,7 +42,7 @@ components: {
 
   <div class="grid">
     <div class="col-7">
-      <FileUpload mode="advanced" name="file" url="upload" @upload="onUpload" :multiple="true" accept=".xls,.xlsx" />
+      <FileUpload mode="advanced" name="file" url="api/upload" @upload="onUpload" :multiple="true" accept=".xls,.xlsx" />
     </div>
     <div class="col-5">
       <Panel header="Log">

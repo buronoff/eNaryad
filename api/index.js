@@ -1,15 +1,11 @@
 const express = require('express')
 const bodyParser = require('body-parser');
 const multer = require('multer')
-
 const auth_controller = require('./auth_controller')
 const hadbook_controller = require('./handbook_controller')
 const rules_controller = require('./rules_controller')
 
 const app = express()
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 
 /* ЗАГРУЗКА ФАЙЛОВ */
 const upload = multer({ dest: 'uploads/' })
@@ -19,6 +15,9 @@ app.post('/upload', upload.single('file'), (req, res) => {
   //res.json({ file: req.file });
 });
 
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 /* АВТОРИЗАЦИЯ */
 app.post('/auth/login',auth_controller.login);
