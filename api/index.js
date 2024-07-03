@@ -1,6 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser');
 const multer = require('multer')
+const path = require('path');
 const auth_controller = require('./auth_controller')
 const hadbook_controller = require('./handbook_controller')
 const rules_controller = require('./rules_controller')
@@ -8,9 +9,24 @@ const rules_controller = require('./rules_controller')
 const app = express()
 
 /* ЗАГРУЗКА ФАЙЛОВ */
-const upload = multer({ dest: 'uploads/' })
+const uploadDir = path.join(__dirname, 'excel_files');
 
-app.post('/upload', upload.single('file'), (req, res) => {
+// Настройка хранилища для Multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const originalname = file.originalname;
+    const utf8name = decodeURIComponent(escape(originalname));
+
+    cb(null, utf8name);
+  }
+});
+
+const upload = multer({ storage: storage });
+
+app.post('/upload', upload.array('file', 100), (req, res) => {
   res.json({ 'res': 'dd' });
   //res.json({ file: req.file });
 });
