@@ -48,7 +48,6 @@ components: {
 
 
     async upload_files() {
-      await this.clearDir()
       let files = this.fileList
       for await (let file of files) {
         await this.sendFile(file[0])
@@ -58,41 +57,48 @@ components: {
 
     async sendFile(file) {
       this.send_status = 0
+      this.send_fileList.push({'file': file.name, 'status':this.send_status, send_text: '', result_table: []})
+      let last_item = this.send_fileList[this.send_fileList.length - 1]
 
-      this.send_fileList.push({'file': file.name, 'status':this.send_status, 'val': null})
+      let to_send = await this.api_upload(file)
+      last_item.send_text = to_send
+      setTimeout(async ()=>{
+        let extract_value = await this.api_getresult()
+        last_item.result_table = extract_value
+      },100)
+
+
+
+    },
+
+    async api_upload(file) {
+      let last_item = this.send_fileList[this.send_fileList.length - 1]
 
       let formData = new FormData();
       formData.append('file', file);
       return this.$axios.post(this.uploadUrl, formData)
-        .then(response => {
-          this.send_status = 1
-
-          let last_item = this.send_fileList[this.send_fileList.length - 1]
-          last_item.status = this.send_status
-
-          console.log('Файл успешно загружен:', response.data);
-          return response.data; // Возвращение данных, если необходимо
+        .then(async response => {
+          return response.data.res
         })
         .catch(error => {
-          this.send_status = 3
-
-          let last_item = this.send_fileList[this.send_fileList.length - 1]
-          last_item.status = this.send_status
-          console.error('Ошибка при загрузке файла:', error);
-          throw error; // Проброс ошибки для дальнейшей обработки
+          last_item.status = 3
+          return error
         });
     },
 
-    async clearDir(){
-      return this.$axios.post('/api/clear_dir')
+    async api_getresult(){
+      let last_item = this.send_fileList[this.send_fileList.length - 1]
+      return this.$axios.get('/api/get_result')
         .then(response => {
-          return response.data; // Возвращение данных, если необходимо
+          last_item.status = 1
+          return response.data.res
         })
         .catch(error => {
-          console.error('Ошибка при загрузке файла:', error);
-          throw error; // Проброс ошибки для дальнейшей обработки
+          last_item.status = 3
+          return error
         });
     }
+
 
   }
 
@@ -157,8 +163,8 @@ components: {
               <div>
                 <i class="pi pi-spin pi-spinner" style="font-size: 1rem" v-if="file.status === 0" ></i>
                 <i class="pi pi-check-circle" style="font-size: 1rem; color: green" v-if="file.status === 1" ></i>
-                <i class="pi-info-circle" style="font-size: 1rem; color: orangered" v-if="file.status === 2" ></i>
-                <i class="pi-times-circle" style="font-size: 1rem; color: red" v-if="file.status === 3" ></i>
+                <i class="pi pi-info-circle" style="font-size: 1rem; color: orangered" v-if="file.status === 2" ></i>
+                <i class="pi pi-times-circle" style="font-size: 1rem; color: red" v-if="file.status === 3" ></i>
               </div>
             </div>
           </template>
