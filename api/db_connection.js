@@ -3,9 +3,9 @@ import sql from 'mssql'
 const dbDataConfig = {
   user: 'sa',
   password: '@Zarafshan*',
-  database: 'db_tb',
-  //server: 'BG-BURONOV',
-  server: 'DESKTOP-GHDOBMJ',
+  database: 'bvr',
+  server: 'BG-BURONOV',
+  //server: 'DESKTOP-GHDOBMJ',
   options: {
       encrypt: false, // for azure
       trustServerCertificate: true, // change to true for local dev / self-signed certs

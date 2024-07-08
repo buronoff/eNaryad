@@ -5,6 +5,8 @@ const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 const requestIp = require('request-ip');
+const { queryData } = require('./db_connection')
+
 
 const auth_controller = require('./auth_controller')
 
@@ -64,12 +66,13 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.post('/upload', upload.single('file'), async (req, res) => {
-
-if (req.file.size) {
-  res.status(200).json({ res: 'файл загружен, подождите идет обработка данных...'});
-} else {
-  res.status(400).json({ res: 'ошибка пи загрузке файла'});
-}
+  if (req.file.path) {
+    let log = readExcelFile(req.file.path)
+    let add = await add_values(log)
+    res.status(200).json({ res: add});
+  } else {
+    res.status(400).json({ res: 'ошибка пи загрузке файла'});
+  }
 
 });
 
@@ -84,7 +87,8 @@ app.get('/get_result',async (req, res) => {
   let fileName = await ifFileExists(ip)
     if (fileName) {
       let readFile = await readExcelFile(fileName)
-      res.status(200).json({ res: readFile});
+      let add = await add_values(readFile)
+      res.status(200).json({ res: add});
     } else {
       res.status(400).json({ res: 'Ошибка чтения файла'});
     }
@@ -111,12 +115,13 @@ function ifFileExists(ip) {
     });
   });
 }
-async function readExcelFile(file) {
+function readExcelFile(file) {
   let log = []
   // Читаем файл Excel
   const workbook = XLSX.readFile(file);
 // Получаем список названий листов в файле
   const sheetNames = workbook.SheetNames;
+
   let tempVal
   let worksheet = workbook.Sheets['Титул'];
   let name_passport = worksheet['F19']?.v + worksheet['G19']?.v + ' ' + worksheet['H19']?.v + worksheet['J19']?.v + worksheet['K19']?.v
@@ -140,8 +145,38 @@ async function readExcelFile(file) {
   let ne_obvodnen= ne_obvod
 
   worksheet = workbook.Sheets['корректир 1'];
-  for (let i = 12; i < 53; i++) {
 
+  let rowCount = 0
+  let boyevik_all = 0
+  for (let j = 12; j < 100; j++) {
+    if (worksheet['N'+j]?.v === 'В.В.:') {
+      rowCount = j
+      break;
+    }
+  }
+
+  let kol_boevik = 0
+  for (let j = rowCount; j < (rowCount + 10); j++) {
+    let ss = worksheet['R'+j]?.f
+    if (ss) {
+    let indx = ss.indexOf('*')
+      if (indx >= 0 ) {
+        kol_boevik = ss.slice((indx+1), 10)
+        break;
+      }
+    }
+  }
+
+
+  let kol_skvazhin_all = 0
+  for (let j = 12; j < 100; j++) {
+    if (worksheet['A'+j]?.v === 'Подлежит взрыванию') {
+      kol_skvazhin_all = worksheet['E'+j]?.v
+      break;
+    }
+  }
+
+  for (let i = 12; i < rowCount; i++) {
       let kol_skvazhin = worksheet['D'+i]?.v
       let numb_numb_skvazhina = worksheet['B' + i]?.v + '-' + worksheet['C' + i]?.v
       let h_ustup = worksheet['F' + i]?.v
@@ -153,44 +188,104 @@ async function readExcelFile(file) {
       let zaryad_ves = worksheet['N' + i]?.v
       let zaryad_ves_all = zaryad_ves * kol_skvazhin
       let l_m = (h_ustup + perebur) * kol_skvazhin
-      let kol_boevik = worksheet['R55']?.v / worksheet['E57']?.v
       let nalichie_vodi = worksheet['H12']?.v
       let v_vzriv_massi = worksheet['X61']?.v
       let zaryad = zaryad_ves
       let boevik_vsego = kol_boevik * kol_skvazhin
 
-      if (boevik_vsego > 0) {
-    log.push({
-      'name_passport':name_passport,
-      'blok': blok,
-      'gorizont': gorizont,
-      'obvod': obvod,
-      'ne_obvod': ne_obvod,
-      'kol_skvazhin': kol_skvazhin,
-      'numb_numb_skvazhina': numb_numb_skvazhina,
-      'h_ustup': h_ustup,
-      'diametr_skvazhina': diametr_skvazhina,
-      'perebur': perebur,
-      'setka_a': setka_a,
-      'setka_b': setka_b,
-      'udelniya_rasxod': udelniya_rasxod,
-      'zaryad_ves': zaryad_ves,
-      'zaryad_ves_all': zaryad_ves_all,
-      'l_m': l_m,
-      'kol_boevik': kol_boevik,
-      'nalichie_vodi': nalichie_vodi,
-      'v_vzriv_massi': v_vzriv_massi,
-      'zaryad': zaryad,
-      'boevik_vsego': boevik_vsego
-    })
+      if (kol_skvazhin > 0) {
+      log.push({
+        'passport_imya':name_passport,
+        'blok': blok,
+        'gorizont': gorizont,
+        'obvod': obvod,
+        'ne_obvod': ne_obvod,
+        'kol_skvazhin': kol_skvazhin,
+        'numb_numb_skvazhina': numb_numb_skvazhina,
+        'ustup': h_ustup,
+        'diametr': diametr_skvazhina,
+        'perebur': perebur,
+        'setka_a': setka_a,
+        'setka_b': setka_b,
+        'udelniy': udelniya_rasxod,
+        'zaryad_ves': zaryad_ves,
+        'zaryad_ves_vsego': zaryad_ves_all,
+        'l_m': l_m,
+        'kol_vo_boevikov': kol_boevik,
+        'nalichie_vodi': nalichie_vodi,
+        'v_vzriv_massi': v_vzriv_massi,
+        'zaryad': zaryad,
+        'boyevik_vsego': boevik_vsego,
+        'ip' : '777.777.777.777'
+      })
       }
   }
-
   return log
 
 }
 
+async function add_values(arr_data){
+  let result_log = []
+  for await (let el of arr_data) {
+      let passport_imya = el.passport_imya
+      let blok = el.blok
+      let gorizont = el.gorizont
+      let obvod = el.obvod
+      let ne_obvod = el.ne_obvod
+      let kol_skvazhin = el.kol_skvazhin
+      let numb_numb_skvazhina = el.numb_numb_skvazhina
+      let ustup = el.ustup
+      let diametr = el.diametr
+      let perebur = el.perebur
+      let setka_a = el.setka_a
+      let setka_b = el.setka_b
+      let udelniy = el.udelniy
+      let zaryad_ves = el.zaryad_ves
+      let zaryad_ves_vsego = el.zaryad_ves_vsego
+      let l_m = el.l_m
+      let kol_vo_boyevikov = el.kol_vo_boevikov
+      let zaryad = el.zaryad
+      let boyevik_vsego = el.boyevik_vsego
+      let ip = el.ip
 
+      let reqText = "exec dbo.add_values " +
+                                "'" + passport_imya + "'," +
+                                "'" + blok + "'," +
+                                "'" + gorizont + "'," +
+                                "'" + obvod + "'," +
+                                "'" + ne_obvod + "'," +
+                                kol_skvazhin + "," +
+                                "'" + numb_numb_skvazhina + "'," +
+                                ustup + "," +
+                                diametr + "," +
+                                perebur + "," +
+                                setka_a + "," +
+                                setka_b + "," +
+                                udelniy + "," +
+                                zaryad_ves + "," +
+                                zaryad_ves_vsego + "," +
+                                l_m + "," +
+                                kol_vo_boyevikov + "," +
+                                zaryad + "," +
+                                boyevik_vsego + "," +
+                                "'" + ip + "'"
+      queryData(reqText).then(rows => {
+        let obj = rows
+        console.log(obj)
+        if (obj.data) {
+
+            result_log.push(obj.data)
+          } else {
+            result_log.push({'error': obj.error.originalError.info.message})
+          }
+        }).catch((err)=> {
+          result_log.push({'error': err})
+      })
+  }
+
+  return result_log
+
+}
 
 
 app.use(bodyParser.json());

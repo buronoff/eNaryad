@@ -8,7 +8,6 @@ import ScrollPanel from 'primevue/scrollpanel';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
 import Dropdown from 'primevue/dropdown';
-import {forEach} from "core-js/stable/dom-collections";
 
 export default  {
 
@@ -50,35 +49,60 @@ components: {
     async upload_files() {
       let files = this.fileList
       for await (let file of files) {
-        await this.sendFile(file[0])
+         await this.upload(file[0])
       }
-      this.fileList = []
     },
 
     async sendFile(file) {
       this.send_status = 0
-      this.send_fileList.push({'file': file.name, 'status':this.send_status, send_text: '', result_table: []})
-      let last_item = this.send_fileList[this.send_fileList.length - 1]
-
-      let to_send = await this.api_upload(file)
-      last_item.send_text = to_send
-      setTimeout(async ()=>{
-        let extract_value = await this.api_getresult()
-        last_item.result_table = extract_value
-      },100)
-
-
+      this.send_fileList.push({'file': file.name, 'status':this.send_status, send_text: [], result_table: []})
+      let last_item = await this.send_fileList[this.send_fileList.length - 1]
+      let res = await this.upload(file)
+      last_item.send_text.push(res)
+      res = await this.read_file()
+      last_item.send_text.push(res)
+      this.send_status = 1
+      last_item.status = this.send_status
 
     },
 
+    async upload(file) {
+
+        let formData = new FormData();
+        formData.append('file', file);
+        return this.$axios.post(this.uploadUrl, formData)
+          .then(response => {
+            return response.data
+          })
+          .catch(error => {
+            return error
+          });
+
+    },
+
+    async read_file() {
+         this.$axios.get('/api/get_result')
+          .then(response => {
+            return response.data
+          })
+          .catch(error => {
+            return error;
+          });
+
+    },
+
+
+
+
+
     async api_upload(file) {
       let last_item = this.send_fileList[this.send_fileList.length - 1]
-
       let formData = new FormData();
       formData.append('file', file);
       return this.$axios.post(this.uploadUrl, formData)
-        .then(async response => {
-          return response.data.res
+        .then(response => {
+          last_item.send_text = response.data.res
+          return this.api_getresult()
         })
         .catch(error => {
           last_item.status = 3
@@ -98,8 +122,6 @@ components: {
           return error
         });
     }
-
-
   }
 
 }
