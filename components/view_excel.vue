@@ -8,6 +8,9 @@ import ScrollPanel from 'primevue/scrollpanel';
 import Accordion from 'primevue/accordion';
 import AccordionTab from 'primevue/accordiontab';
 import Dropdown from 'primevue/dropdown';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import BlockUI from 'primevue/blockui';
 
 export default  {
 
@@ -20,7 +23,10 @@ components: {
   ScrollPanel,
   Accordion,
   AccordionTab,
-  Dropdown
+  Dropdown,
+  DataTable,
+  Column,
+  BlockUI
 },
 
   data(){
@@ -31,7 +37,9 @@ components: {
     send_status: null, // 0-отправка  1-ок 2-ошибка 3-отказано
     send_fileList: [],
     karyer_list: ['Рудник Мурунтау', 'Карьер Бесапантау', 'Карьер Балпантау'],
-    karyer_name: null
+    karyer_name: null,
+    resultTableList: [],
+    blockedPanel: false
 
   }
   },
@@ -47,23 +55,32 @@ components: {
 
 
     async upload_files() {
-      let files = this.fileList
-      for await (let file of files) {
-         await this.upload(file[0])
-      }
+
+      this.$axios.post('/api/cleardir')
+        .then(async (response) => {
+          this.blockedPanel = true
+          let files = this.fileList
+           for await (let file of files) {
+            await this.sendFile(file[0])
+          }
+          this.fileList = []
+          this.blockedPanel = false
+        })
+        .catch(error => {
+          return error
+        });
+
     },
 
     async sendFile(file) {
       this.send_status = 0
       this.send_fileList.push({'file': file.name, 'status':this.send_status, send_text: [], result_table: []})
       let last_item = await this.send_fileList[this.send_fileList.length - 1]
-      let res = await this.upload(file)
-      last_item.send_text.push(res)
-      res = await this.read_file()
-      last_item.send_text.push(res)
+      let response_data = await this.upload(file)
+      last_item.result_table = response_data.res
+      this.resultTableList.push({listName:file.name, val: response_data.res})
       this.send_status = 1
       last_item.status = this.send_status
-
     },
 
     async upload(file) {
@@ -80,48 +97,13 @@ components: {
 
     },
 
-    async read_file() {
-         this.$axios.get('/api/get_result')
-          .then(response => {
-            return response.data
-          })
-          .catch(error => {
-            return error;
-          });
+    async addTo_db(listName){
+      let arr = this.resultTableList.filter((item) => item.listName = listName)
 
+      console.log(listName)
     },
 
 
-
-
-
-    async api_upload(file) {
-      let last_item = this.send_fileList[this.send_fileList.length - 1]
-      let formData = new FormData();
-      formData.append('file', file);
-      return this.$axios.post(this.uploadUrl, formData)
-        .then(response => {
-          last_item.send_text = response.data.res
-          return this.api_getresult()
-        })
-        .catch(error => {
-          last_item.status = 3
-          return error
-        });
-    },
-
-    async api_getresult(){
-      let last_item = this.send_fileList[this.send_fileList.length - 1]
-      return this.$axios.get('/api/get_result')
-        .then(response => {
-          last_item.status = 1
-          return response.data.res
-        })
-        .catch(error => {
-          last_item.status = 3
-          return error
-        });
-    }
   }
 
 }
@@ -132,7 +114,10 @@ components: {
   <Toast />
 
   <div class="grid">
-    <div class="col-6">
+    <div class="col-4">
+
+      <BlockUI :blocked="blockedPanel">
+
 
       <Panel header="Log">
         <template #header>
@@ -164,14 +149,16 @@ components: {
               </ul>
             </div>
             <div class="flex justify-content-end">
-              <Button label="Загрузить" icon="pi pi-check" class="p-button-sm" @click="upload_files" />
+              <Button label="Выгрузить данные" icon="pi pi-check" class="p-button-sm" @click="upload_files" />
             </div>
         </div>
 
       </Panel>
 
+      </BlockUI>
+
     </div>
-    <div class="col-6">
+    <div class="col-8">
       <Panel header="Обработанные файлы">
       <div class="div_send_list h-full">
       <Accordion>
@@ -190,7 +177,34 @@ components: {
               </div>
             </div>
           </template>
-          {{file.val}}
+
+          <ScrollPanel style="width: 100%; height: 40vh">
+          <DataTable :value="file.result_table" showGridlines class="p-datatable-sm" >
+            <Column field="passport_imya" header="Паспорт"></Column>
+            <Column field="blok" header="Блок"></Column>
+            <Column field="gorizont" header="Гор."></Column>
+            <Column field="obvod" header="Обвод"></Column>
+            <Column field="ne_obvod" header="Не Обвод"></Column>
+            <Column field="kol_skvazhin" header="Кол-во скв."></Column>
+            <Column field="numb_numb_skvazhina" header="№№ скв."></Column>
+            <Column field="ustup" header="Уступ"></Column>
+            <Column field="diametr" header="Диаметр"></Column>
+            <Column field="perebur" header="Перебур"></Column>
+            <Column field="setka_a" header="Сетка А"></Column>
+            <Column field="setka_b" header="Сетка Б"></Column>
+            <Column field="udelniy" header="Удельный расход"></Column>
+            <Column field="zaryad_ves" header="Вес заряда"></Column>
+            <Column field="zaryad_ves_vsego" header="Заряд всего"></Column>
+            <Column field="l_m" header="L(m)"></Column>
+            <Column field="kol_vo_boevikov" header="Кол-во боевиков"></Column>
+            <Column field="v_vzriv_massi" header="V ВМ"></Column>
+            <Column field="zaryad" header="Заряд"></Column>
+            <Column field="boyevik_vsego" header="Кол-во Боевиков всего"></Column>
+          </DataTable>
+          </ScrollPanel>
+          <Button label="Запись в БД" icon="pi pi-save" class="p-button-success p-button-sm mt-3 float-end" @click="addTo_db(file.file)" />
+
+
         </AccordionTab>
       </Accordion>
       </div>
@@ -311,6 +325,10 @@ components: {
 /* Disabled */
 .input-file input[type=file]:disabled + span {
   background-color: #eee;
+}
+
+.p-column-title {
+  text-align: center;
 }
 
 </style>

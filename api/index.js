@@ -7,15 +7,12 @@ const fs = require('fs');
 const requestIp = require('request-ip');
 const { queryData } = require('./db_connection')
 
-
 const auth_controller = require('./auth_controller')
-
 
 const app = express()
 app.use(requestIp.mw());
 
 /* ЗАГРУЗКА ФАЙЛОВ */
-
 
 function ifExistsDir(dir_name){
   let dir = path.join(__dirname, 'excel_files', dir_name)
@@ -28,15 +25,14 @@ function ifExistsDir(dir_name){
 function clearDir(dir){
   fs.readdir(dir, (err, files) => {
     if (err) {
-      console.error(`Ошибка чтения папки ${dir}:`, err);
-      return;
+      return err;
     }
 
     files.forEach(file => {
       const filePath = path.join(dir, file);
       fs.unlink(filePath, err => {
         if (err) {
-          console.error(`Ошибка удаления файла ${filePath}:`, err);
+          return err;
         }
       });
     });
@@ -51,7 +47,6 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const ip = req.clientIp
     let uploadDir = ifExistsDir(ip)
-    clearDir(uploadDir)
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
@@ -61,61 +56,38 @@ const storage = multer.diskStorage({
   }
 });
 
-
-
 const upload = multer({ storage: storage });
 
 app.post('/upload', upload.single('file'), async (req, res) => {
   if (req.file.path) {
-    let log = readExcelFile(req.file.path)
-    let add = await add_values(log)
-    res.status(200).json({ res: add});
+
+    setTimeout(async ()=>{
+      let log = await readExcelFile(req.file.path)
+      res.status(200).json({ res: log});
+    },500)
+
   } else {
     res.status(400).json({ res: 'ошибка пи загрузке файла'});
   }
-
 });
 
-app.post('/clear_dir', (req, res) => {
-  const ip = req.clientIp
-  let uploadDir = clearDir(ip)
-  res.status(200).json({ res: 'папка для загрузки готова' });
+app.post('/cleardir', (req, res) => {
+  try {
+    const ip = req.clientIp
+    let dir = ifExistsDir(ip)
+    clearDir(dir)
+    res.status(200).json({ res: 'каталог очищен'});
+  }
+  catch(err) {
+    res.status(400).json({ res: err});
+  }
 });
 
-app.get('/get_result',async (req, res) => {
-  let ip = await req.clientIp
-  let fileName = await ifFileExists(ip)
-    if (fileName) {
-      let readFile = await readExcelFile(fileName)
-      let add = await add_values(readFile)
-      res.status(200).json({ res: add});
-    } else {
-      res.status(400).json({ res: 'Ошибка чтения файла'});
-    }
 
-});
-function ifFileExists(ip) {
-  let directoryPath = ifExistsDir(ip)
-  return new Promise((resolve, reject) => {
-    fs.readdir(directoryPath, (err, files) => {
-      if (err) {
-        reject(err); // В случае ошибки отклоняем промис
-        return ;
-      }
-      // Проверяем, есть ли файлы в каталоге
-      if (files.length === 0) {
-        reject(new Error('Каталог пуст.')); // Отклоняем промис, если каталог пуст
-        return;
-      }
-      // Получаем абсолютный путь к первому файлу
-      const firstFile = files[0];
-      const absoluteFilePath = path.resolve(directoryPath, firstFile);
-      // Разрешаем промис с абсолютным путем к первому файлу
-      resolve(absoluteFilePath);
-    });
-  });
-}
-function readExcelFile(file) {
+
+
+
+async function readExcelFile(file) {
   let log = []
   // Читаем файл Excel
   const workbook = XLSX.readFile(file);
@@ -218,72 +190,33 @@ function readExcelFile(file) {
         'boyevik_vsego': boevik_vsego,
         'ip' : '777.777.777.777'
       })
-      }
+    }
   }
-  return log
 
+  return log
 }
 
-async function add_values(arr_data){
-  let result_log = []
-  for await (let el of arr_data) {
-      let passport_imya = el.passport_imya
-      let blok = el.blok
-      let gorizont = el.gorizont
-      let obvod = el.obvod
-      let ne_obvod = el.ne_obvod
-      let kol_skvazhin = el.kol_skvazhin
-      let numb_numb_skvazhina = el.numb_numb_skvazhina
-      let ustup = el.ustup
-      let diametr = el.diametr
-      let perebur = el.perebur
-      let setka_a = el.setka_a
-      let setka_b = el.setka_b
-      let udelniy = el.udelniy
-      let zaryad_ves = el.zaryad_ves
-      let zaryad_ves_vsego = el.zaryad_ves_vsego
-      let l_m = el.l_m
-      let kol_vo_boyevikov = el.kol_vo_boevikov
-      let zaryad = el.zaryad
-      let boyevik_vsego = el.boyevik_vsego
-      let ip = el.ip
+function addVal_to_db(  passport_imya, blok, gorizont, obvod, ne_obvod, kol_skvazhin, numb_numb_skvazhina, ustup,
+                  diametr, perebur, setka_a, setka_b, udelniy, zaryad_ves, zaryad_ves_vsego, l_m, kol_vo_boyevikov,
+                  zaryad, boyevik_vsego, ip ) {
 
-      let reqText = "exec dbo.add_values " +
-                                "'" + passport_imya + "'," +
-                                "'" + blok + "'," +
-                                "'" + gorizont + "'," +
-                                "'" + obvod + "'," +
-                                "'" + ne_obvod + "'," +
-                                kol_skvazhin + "," +
-                                "'" + numb_numb_skvazhina + "'," +
-                                ustup + "," +
-                                diametr + "," +
-                                perebur + "," +
-                                setka_a + "," +
-                                setka_b + "," +
-                                udelniy + "," +
-                                zaryad_ves + "," +
-                                zaryad_ves_vsego + "," +
-                                l_m + "," +
-                                kol_vo_boyevikov + "," +
-                                zaryad + "," +
-                                boyevik_vsego + "," +
-                                "'" + ip + "'"
-      queryData(reqText).then(rows => {
-        let obj = rows
-        console.log(obj)
-        if (obj.data) {
 
-            result_log.push(obj.data)
-          } else {
-            result_log.push({'error': obj.error.originalError.info.message})
-          }
-        }).catch((err)=> {
-          result_log.push({'error': err})
-      })
-  }
 
-  return result_log
+    let reqText = "exec dbo.add_values  '" + passport_imya + "','" + blok + "', '" + gorizont + "','" + obvod + "','" + ne_obvod + "'," + kol_skvazhin + "," +
+                          "'" + numb_numb_skvazhina + "'," + ustup + "," + diametr + "," + perebur + "," + setka_a + "," + setka_b + "," + udelniy + "," + zaryad_ves + "," +
+                          zaryad_ves_vsego + "," + l_m + "," + kol_vo_boyevikov + "," + zaryad + "," + boyevik_vsego + "," + "'" + ip + "'"
+
+    queryData(reqText).then(rows => {
+      let obj = rows
+      if (obj.data) {
+        return obj.data
+      } else {
+        return obj.error.originalError.info.message
+      }
+    }).catch((err)=> {
+      return err
+    })
+
 
 }
 
