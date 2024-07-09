@@ -12,6 +12,12 @@ const auth_controller = require('./auth_controller')
 const app = express()
 app.use(requestIp.mw());
 
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+
+
 /* ЗАГРУЗКА ФАЙЛОВ */
 
 function ifExistsDir(dir_name){
@@ -161,7 +167,7 @@ async function readExcelFile(file) {
       let zaryad_ves_all = zaryad_ves * kol_skvazhin
       let l_m = (h_ustup + perebur) * kol_skvazhin
       let nalichie_vodi = worksheet['H12']?.v
-      let v_vzriv_massi = worksheet['X61']?.v
+      let v_vzriv_massi = worksheet['R'+rowCount]?.v
       let zaryad = zaryad_ves
       let boevik_vsego = kol_boevik * kol_skvazhin
 
@@ -187,8 +193,7 @@ async function readExcelFile(file) {
         'nalichie_vodi': nalichie_vodi,
         'v_vzriv_massi': v_vzriv_massi,
         'zaryad': zaryad,
-        'boyevik_vsego': boevik_vsego,
-        'ip' : '777.777.777.777'
+        'boyevik_vsego': boevik_vsego
       })
     }
   }
@@ -196,33 +201,51 @@ async function readExcelFile(file) {
   return log
 }
 
-function addVal_to_db(  passport_imya, blok, gorizont, obvod, ne_obvod, kol_skvazhin, numb_numb_skvazhina, ustup,
-                  diametr, perebur, setka_a, setka_b, udelniy, zaryad_ves, zaryad_ves_vsego, l_m, kol_vo_boyevikov,
-                  zaryad, boyevik_vsego, ip ) {
+
+app.post('/addval', (req, res) => {
+
+  let  passport_imya=req.body.passport_imya
+  let  blok = req.body.blok
+  let  gorizont = req.body.gorizont
+  let  obvod = req.body.obvod
+  let  ne_obvod = req.body.ne_obvod
+  let  kol_skvazhin = req.body.kol_skvazhin
+  let  numb_numb_skvazhina = req.body.numb_numb_skvazhina
+  let  ustup = req.body.ustup
+  let  diametr = req.body.diametr
+  let  perebur = req.body.perebur
+  let  setka_a = req.body.setka_a
+  let  setka_b = req.body.setka_b
+  let  udelniy = req.body.udelniy
+  let  zaryad_ves = req.body.zaryad_ves
+  let  zaryad_ves_vsego = req.body.zaryad_ves_vsego
+  let  l_m = req.body.l_m
+  let  kol_vo_boyevikov = req.body.kol_vo_boyevikov
+  let  zaryad = req.body.zaryad
+  let  boyevik_vsego = req.body.boyevik_vsego
+  let  obyom_vzriv_veshestva = req.body.obyom_vzriv_veshestva
+  let  ip = req.clientIp
+  let  karyer = req.body.karyer
+
+
+  let reqText = "exec dbo.add_values  '" + passport_imya + "','" + blok + "', '" + gorizont + "','" + obvod + "','" + ne_obvod + "'," + kol_skvazhin + "," +
+                        "'" + numb_numb_skvazhina + "'," + ustup + "," + diametr + "," + perebur + "," + setka_a + "," + setka_b + "," + udelniy + "," + zaryad_ves + "," +
+                        zaryad_ves_vsego + "," + l_m + "," + kol_vo_boyevikov + "," + zaryad + "," + boyevik_vsego + "," + obyom_vzriv_veshestva + ",'" + ip + "', '" + karyer + "'"
+
+  queryData(reqText).then(rows => {
+    var obj = rows
+    if (obj.data) {
+      res.status(200).json({'status': 'OK', 'data': obj.data})
+    } else {
+      res.status(400).json({'status': 'Error', 'data': obj.error.originalError.info.message})
+    }
+  }).catch((err)=> {
+    res.status(400).json({'status': 'Error', 'data': err})
+  })
+});
 
 
 
-    let reqText = "exec dbo.add_values  '" + passport_imya + "','" + blok + "', '" + gorizont + "','" + obvod + "','" + ne_obvod + "'," + kol_skvazhin + "," +
-                          "'" + numb_numb_skvazhina + "'," + ustup + "," + diametr + "," + perebur + "," + setka_a + "," + setka_b + "," + udelniy + "," + zaryad_ves + "," +
-                          zaryad_ves_vsego + "," + l_m + "," + kol_vo_boyevikov + "," + zaryad + "," + boyevik_vsego + "," + "'" + ip + "'"
-
-    queryData(reqText).then(rows => {
-      let obj = rows
-      if (obj.data) {
-        return obj.data
-      } else {
-        return obj.error.originalError.info.message
-      }
-    }).catch((err)=> {
-      return err
-    })
-
-
-}
-
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
 
 /* АВТОРИЗАЦИЯ */
 app.post('/auth/login',auth_controller.login);

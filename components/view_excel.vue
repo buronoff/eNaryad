@@ -39,7 +39,8 @@ components: {
     karyer_list: ['Рудник Мурунтау', 'Карьер Бесапантау', 'Карьер Балпантау'],
     karyer_name: null,
     resultTableList: [],
-    blockedPanel: false
+    blockedPanel: false,
+    isLoading: false
 
   }
   },
@@ -56,19 +57,25 @@ components: {
 
     async upload_files() {
 
-      this.$axios.post('/api/cleardir')
-        .then(async (response) => {
-          this.blockedPanel = true
-          let files = this.fileList
-           for await (let file of files) {
-            await this.sendFile(file[0])
-          }
-          this.fileList = []
-          this.blockedPanel = false
-        })
-        .catch(error => {
-          return error
-        });
+      if (this.karyer_name) {
+
+        this.$axios.post('/api/cleardir')
+          .then(async (response) => {
+            this.blockedPanel = true
+            let files = this.fileList
+            for await (let file of files) {
+              await this.sendFile(file[0])
+            }
+            this.fileList = []
+            this.blockedPanel = false
+            this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные готовы для записи в БД, для записи раскройте таблицу с данными...', life: 5000});
+          })
+          .catch(error => {
+            return error
+          });
+      } else {
+        this.$toast.add({severity:'error', summary: 'Ошибка', detail:'Выберите карьер', life: 3000});
+      }
 
     },
 
@@ -76,32 +83,81 @@ components: {
       this.send_status = 0
       this.send_fileList.push({'file': file.name, 'status':this.send_status, send_text: [], result_table: []})
       let last_item = await this.send_fileList[this.send_fileList.length - 1]
-      let response_data = await this.upload(file)
-      last_item.result_table = response_data.res
-      this.resultTableList.push({listName:file.name, val: response_data.res})
-      this.send_status = 1
-      last_item.status = this.send_status
+      try {
+        let response_data = await this.upload(file)
+        last_item.result_table = response_data.res
+        this.resultTableList.push({listName:file.name, val: response_data.res})
+        this.send_status = 1
+        last_item.status = this.send_status
+      }
+      catch(err){
+        let response_data = await this.upload(file)
+        last_item.result_table = response_data.res
+        this.resultTableList.push({listName:file.name, val: response_data.res})
+        this.send_status = 3
+        last_item.status = this.send_status
+      }
+
+
     },
 
     async upload(file) {
 
-        let formData = new FormData();
-        formData.append('file', file);
-        return this.$axios.post(this.uploadUrl, formData)
-          .then(response => {
-            return response.data
-          })
-          .catch(error => {
-            return error
-          });
+          let formData = new FormData();
+          formData.append('file', file);
+          return this.$axios.post(this.uploadUrl, formData)
+            .then(response => {
+              return response.data
+            })
+            .catch(error => {
+              return error
+            });
 
     },
 
     async addTo_db(listName){
-      let arr = this.resultTableList.filter((item) => item.listName = listName)
+      this.isLoading = true
+      let arr = this.resultTableList.filter((item) => item.listName === listName)
 
-      console.log(listName)
+      for await (let el of arr[0].val) {
+
+        let data = ({
+          'passport_imya': el.passport_imya,
+          'blok': el.blok,
+          'gorizont': el.gorizont,
+          'obvod': el.obvod,
+          'ne_obvod': el.ne_obvod,
+          'kol_skvazhin': el.kol_skvazhin,
+          'numb_numb_skvazhina': el.numb_numb_skvazhina,
+          'ustup': el.ustup,
+          'diametr': el.diametr,
+          'perebur': el.perebur,
+          'setka_a': el.setka_a,
+          'setka_b': el.setka_b,
+          'udelniy': el.udelniy,
+          'zaryad_ves': el.zaryad_ves,
+          'zaryad_ves_vsego': el.zaryad_ves_vsego,
+          'l_m': el.l_m,
+          'kol_vo_boyevikov': el.kol_vo_boevikov,
+          'zaryad': el.zaryad,
+          'boyevik_vsego': el.boyevik_vsego,
+          'obyom_vzriv_veshestva': el.v_vzriv_massi,
+          'karyer': this.karyer_name
+        })
+
+          this.$axios.post('/api/addval', data)
+            .then(response => {
+              // console.log(response.data)
+            })
+            .catch(error => {
+              this.$toast.add({severity:'error', summary: 'Ошибка', detail:error, life: 3000});
+            });
+        }
+      this.isLoading = false
+      this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные записаны в БД...', life: 3000});
     },
+
+
 
 
   }
@@ -149,7 +205,7 @@ components: {
               </ul>
             </div>
             <div class="flex justify-content-end">
-              <Button label="Выгрузить данные" icon="pi pi-check" class="p-button-sm" @click="upload_files" />
+              <Button label="Выгрузить данные" icon="pi pi-check" class="p-button-sm" @click="upload_files" v-if="fileList.length > 0" />
             </div>
         </div>
 
@@ -179,7 +235,7 @@ components: {
           </template>
 
           <ScrollPanel style="width: 100%; height: 40vh">
-          <DataTable :value="file.result_table" showGridlines class="p-datatable-sm" >
+          <DataTable :value="file.result_table" showGridlines class="p-datatable-sm" :rowHover="true" :autoLayout="true">
             <Column field="passport_imya" header="Паспорт"></Column>
             <Column field="blok" header="Блок"></Column>
             <Column field="gorizont" header="Гор."></Column>
@@ -202,8 +258,8 @@ components: {
             <Column field="boyevik_vsego" header="Кол-во Боевиков всего"></Column>
           </DataTable>
           </ScrollPanel>
-          <Button label="Запись в БД" icon="pi pi-save" class="p-button-success p-button-sm mt-3 float-end" @click="addTo_db(file.file)" />
 
+          <Button label="Запись в БД" icon="pi pi-save" class="p-button-success p-button-sm mt-3 float-end" @click="addTo_db(file.file)" :loading="isLoading" />
 
         </AccordionTab>
       </Accordion>
@@ -329,6 +385,10 @@ components: {
 
 .p-column-title {
   text-align: center;
+}
+
+.isNullStyle {
+  background-color: red;
 }
 
 </style>
