@@ -43,7 +43,7 @@ export default {
   modules: [
     // Doc: https://www.primefaces.org/primevue/showcase-v2/#/setup
     ['primevue/nuxt',  {
-      theme: 'fluent-light'
+      theme: 'saga-green'
     }],
     '@nuxtjs/auth',
     '@nuxtjs/axios'

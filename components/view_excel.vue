@@ -387,8 +387,12 @@ components: {
   text-align: center;
 }
 
-.isNullStyle {
-  background-color: red;
+.p-datatable-table {
+  font-size: 0.75em
+}
+
+.p-datatable .p-datatable-tbody > tr > td{
+  text-align: center;
 }
 
 </style>
