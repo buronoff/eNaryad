@@ -11,6 +11,7 @@ import Dropdown from 'primevue/dropdown';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import BlockUI from 'primevue/blockui';
+import ConfirmDialog from 'primevue/confirmdialog';
 
 export default  {
 
@@ -26,7 +27,8 @@ components: {
   Dropdown,
   DataTable,
   Column,
-  BlockUI
+  BlockUI,
+  ConfirmDialog
 },
 
   data(){
@@ -115,34 +117,111 @@ components: {
 
     },
 
-    async addTo_db(listName){
+    async addTo_db(listName) {
+      this.isLoading = true
+      try {
+        let isHasRow = await this.hasRow(listName)
+
+        console.log(isHasRow)
+
+        if (isHasRow === true) {
+          this.$confirm.require({
+            message: 'Информация по данному паспорту существует... Удалить все данные?',
+            header: 'Сообщение',
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Да',
+            rejectLabel: 'Отмена',
+            accept: async () => {
+              try {
+                await this.deleteRows(listName)
+              }
+              catch(err){
+                this.$toast.add({severity:'error', summary: 'Ошибка', detail:err, life: 3000});
+              }
+            },
+            reject: () => {
+              this.$toast.add({severity:'info', summary: 'Сообщение', detail:'Действие отменено пользователем', life: 3000});
+            }
+          });
+        } else {
+          this.insertTo_db(listName)
+        }
+        this.isLoading = false
+      }
+      catch(err){
+        this.$toast.add({severity:'error', summary: 'Ошибка', detail:err, life: 3000});
+      }
+
+    },
+
+    async hasRow(listName) {
+
+      let arr = this.resultTableList.filter((item) => item.listName === listName)
+      let arr_val = arr[0].val[0]
+      let data = {
+                  'c_date': arr_val.c_date,
+                  'file_name': listName,
+                  'passport_name': arr_val.passport_name
+                 }
+      return this.$axios.post('/api/hasRows', data)
+        .then(response => {
+            return response.data.data[0].res
+        })
+        .catch(error => {
+          this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 3000});
+        });
+
+
+    },
+
+    async deleteRows(listName) {
+
+      let arr = this.resultTableList.filter((item) => item.listName === listName)
+      let arr_val = arr[0].val[0]
+      let data = {
+        'c_date': arr_val.c_date,
+        'file_name': listName,
+        'passport_name': arr_val.passport_name
+      }
+      this.$axios.post('/api/deleteRows', data)
+        .then(response => {
+          this.insertTo_db(listName)
+        })
+        .catch(error => {
+          this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 5000});
+        });
+
+
+    },
+
+    async insertTo_db(listName){
       this.isLoading = true
       let arr = this.resultTableList.filter((item) => item.listName === listName)
 
       for await (let el of arr[0].val) {
 
         let data = ({
-          'passport_imya': el.passport_imya,
+          'file_name': listName,
+          'c_date': el.c_date,
+          'karyer': this.karyer_name,
+          'passport_name': el.passport_name,
           'blok': el.blok,
-          'gorizont': el.gorizont,
-          'obvod': el.obvod,
-          'ne_obvod': el.ne_obvod,
-          'kol_skvazhin': el.kol_skvazhin,
-          'numb_numb_skvazhina': el.numb_numb_skvazhina,
-          'ustup': el.ustup,
-          'diametr': el.diametr,
-          'perebur': el.perebur,
-          'setka_a': el.setka_a,
-          'setka_b': el.setka_b,
-          'udelniy': el.udelniy,
-          'zaryad_ves': el.zaryad_ves,
-          'zaryad_ves_vsego': el.zaryad_ves_vsego,
-          'l_m': el.l_m,
-          'kol_vo_boyevikov': el.kol_vo_boevikov,
+          'qatlam': el.qatlam,
+          'tartib_raqami': el.tartib_raqami,
+          'quduqlar_soni': el.quduqlar_soni,
+          'quduqlar_guruhi': el.quduqlar_guruhi,
+          'pogona_balandligi': el.pogona_balandligi,
+          'quduq_diametri': el.quduq_diametri,
+          'ortiqcha_burgulash': el.ortiqcha_burgulash,
+          'oraliq_masofa_a': el.oraliq_masofa_a,
+          'oraliq_masofa_b': el.oraliq_masofa_b,
+          'solishtirma_sarf': el.solishtirma_sarf,
+          'quduqda_joylashgan_zaryad': el.quduqda_joylashgan_zaryad,
+          'kol_vo_boyevikov': el.kol_vo_boyevikov,
+          'nalichiye_vodi': el.nalichiye_vodi,
+          'obyom_vzrivchatki': el.obyom_vzrivchatki,
           'zaryad': el.zaryad,
-          'boyevik_vsego': el.boyevik_vsego,
-          'obyom_vzriv_veshestva': el.v_vzriv_massi,
-          'karyer': this.karyer_name
+          'zaboyka': el.zaboyka
         })
 
           this.$axios.post('/api/addval', data)
@@ -150,14 +229,12 @@ components: {
               // console.log(response.data)
             })
             .catch(error => {
-              this.$toast.add({severity:'error', summary: 'Ошибка', detail:error, life: 3000});
+              this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 3000});
             });
         }
       this.isLoading = false
       this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные записаны в БД...', life: 3000});
     },
-
-
 
 
   }
@@ -168,6 +245,7 @@ components: {
 <template>
 <div>
   <Toast />
+  <ConfirmDialog />
 
   <div class="grid">
     <div class="col-4">
@@ -236,26 +314,26 @@ components: {
 
           <ScrollPanel style="width: 100%; height: 40vh">
           <DataTable :value="file.result_table" showGridlines class="p-datatable-sm" :rowHover="true" :autoLayout="true">
-            <Column field="passport_imya" header="Паспорт"></Column>
+            <Column field="c_date" header="Дата утверждения"></Column>
+            <Column field="passport_name" header="Паспорт"></Column>
             <Column field="blok" header="Блок"></Column>
-            <Column field="gorizont" header="Гор."></Column>
-            <Column field="obvod" header="Обвод"></Column>
-            <Column field="ne_obvod" header="Не Обвод"></Column>
-            <Column field="kol_skvazhin" header="Кол-во скв."></Column>
-            <Column field="numb_numb_skvazhina" header="№№ скв."></Column>
-            <Column field="ustup" header="Уступ"></Column>
-            <Column field="diametr" header="Диаметр"></Column>
-            <Column field="perebur" header="Перебур"></Column>
-            <Column field="setka_a" header="Сетка А"></Column>
-            <Column field="setka_b" header="Сетка Б"></Column>
-            <Column field="udelniy" header="Удельный расход"></Column>
-            <Column field="zaryad_ves" header="Вес заряда"></Column>
-            <Column field="zaryad_ves_vsego" header="Заряд всего"></Column>
-            <Column field="l_m" header="L(m)"></Column>
-            <Column field="kol_vo_boevikov" header="Кол-во боевиков"></Column>
-            <Column field="v_vzriv_massi" header="V ВМ"></Column>
-            <Column field="zaryad" header="Заряд"></Column>
-            <Column field="boyevik_vsego" header="Кол-во Боевиков всего"></Column>
+            <Column field="qatlam" header="Гор."></Column>
+            <Column field="tartib_raqami" header="№ п/п"></Column>
+            <Column field="quduqlar_soni" header="Кол. скв."></Column>
+            <Column field="quduqlar_guruhi" header="№ № скв."></Column>
+            <Column field="pogona_balandligi" header="Выс. уступа"></Column>
+            <Column field="quduq_diametri" header="Диаметр скв."></Column>
+            <Column field="ortiqcha_burgulash" header="Перебур"></Column>
+            <Column field="oraliq_masofa_a" header="Сетка А"></Column>
+            <Column field="oraliq_masofa_b" header="Сетка Б"></Column>
+            <Column field="solishtirma_sarf" header="Уд. расход"></Column>
+            <Column field="quduqda_joylashgan_zaryad" header="Заряд в скв."></Column>
+            <Column field="kol_vo_boyevikov" header="Кол. боевиков"></Column>
+            <Column field="nalichiye_vodi" header="Наличие воды"></Column>
+            <Column field="obyom_vzrivchatki" header="Объем ВМ"></Column>
+            <Column field="zaryad" header="Длина заряда"></Column>
+            <Column field="zaboyka" header="Забойка"></Column>
+
           </DataTable>
           </ScrollPanel>
 
