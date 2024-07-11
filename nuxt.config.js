@@ -52,25 +52,25 @@ export default {
   auth: {
     strategies: {
       local: {
+        scheme: 'refresh',
         token: {
-          property: 'token',
-          global: true,
-          required: true,
+          property: 'access',
+          maxAge: 1800,
           type: 'Bearer'
         },
+        refreshToken: {
+          property: 'refresh',
+          data: 'refresh',
+          maxAge: 60 * 60 * 24 * 30
+        },
         endpoints: {
-          login: { url: '/api/auth/login', method: 'post' },
-          logout: { url: '/api/auth/logout', method: 'post' },
-          user: { url: '/api/auth/user', method: 'get', propertyName: false }
-        }
-        // Настройки для управления токеном
+          login: { url: '/api/token/', method: 'post' },
+          refresh: { url: '/api/refresh_token/', method: 'post' },
+          user: { url: '/api/profile/', method: 'get' },
+          logout: false
+        },
+        tokenRequired: true,
       }
-    },
-    redirect: {
-      login: '/login',
-      logout: '/',
-      callback: '/login',
-      home: '/'
     }
   },
 
