@@ -208,8 +208,6 @@ app.get('/getval', (req, res) => {
   })
 });
 
-
-
 async function readExcelFile(file) {
   let log = []
   // Читаем файл Excel

@@ -23,10 +23,8 @@ export default {
 
 <template>
   <div class="flex justify-content-center flex-row align-items-center" style="height: 90vh">
-    <Card style="width: 20rem;">
-      <template #title>
-        Вход
-      </template>
+    <Card style="width: 30rem;">
+      <template #title> Регистрация нового пользователя </template>
       <template #content>
         <div class="flex flex-column">
           <div class="mt-3">
@@ -38,13 +36,20 @@ export default {
 
           <div class="mt-5">
             <span class="p-input-icon-left w-full">
+              <i class="pi pi-users" />
+              <InputText id="username" type="text" v-model="dest" class="w-full" placeholder="Подразделение"/>
+            </span>
+          </div>
+
+          <div class="mt-5">
+            <span class="p-input-icon-left w-full">
               <i class="pi pi-key" />
               <InputText id="username" type="password" v-model="password" class="w-full" placeholder="Пароль"/>
             </span>
           </div>
 
           <div class="flex justify-content-end mt-4">
-            <Button label="Войти" class="p-button-sm"  />
+            <Button label="Зарегистрировать" class="p-button-sm"  />
           </div>
 
         </div>

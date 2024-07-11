@@ -1,16 +1,11 @@
 import { queryData } from "./db_connection.js"
-
-const upravleniye = 'bg-buronov'
-const token = 'br-buronovToken'
-
+import jwt  from 'jsonwebtoken'
 
 const login = (req, res) => {
   var user = req.body.user
   var pass = req.body.pass
 
-  console.log(user)
-
-  var reqText = "exec users.get_user '" + user + "'"
+  var reqText = "exec auth.get_user '" + user + "'"
   queryData(reqText).then(rows => {
          var obj = rows
          if (obj.data) {
