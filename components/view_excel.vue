@@ -12,6 +12,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import BlockUI from 'primevue/blockui';
 import ConfirmDialog from 'primevue/confirmdialog';
+import Dialog from 'primevue/dialog';
 
 export default  {
 
@@ -28,7 +29,8 @@ components: {
   DataTable,
   Column,
   BlockUI,
-  ConfirmDialog
+  ConfirmDialog,
+  Dialog
 },
 
   data(){
@@ -42,7 +44,9 @@ components: {
     karyer_name: null,
     resultTableList: [],
     blockedPanel: false,
-    isLoading: false
+    isLoading: false,
+    isShowModal: false,
+    modalTableList:[],
 
   }
   },
@@ -122,8 +126,6 @@ components: {
       try {
         let isHasRow = await this.hasRow(listName)
 
-        console.log(isHasRow)
-
         if (isHasRow === true) {
           this.$confirm.require({
             message: 'Информация по данному паспорту существует... Удалить все данные?',
@@ -144,7 +146,8 @@ components: {
             }
           });
         } else {
-          this.insertTo_db(listName)
+          await this.insertTo_db(listName)
+          //await this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные записаны в БД...', life: 3000});
         }
         this.isLoading = false
       }
@@ -195,7 +198,6 @@ components: {
     },
 
     async insertTo_db(listName){
-      this.isLoading = true
       let arr = this.resultTableList.filter((item) => item.listName === listName)
 
       for await (let el of arr[0].val) {
@@ -232,10 +234,65 @@ components: {
               this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 3000});
             });
         }
-      this.isLoading = false
-      this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные записаны в БД...', life: 3000});
+
+        this.$toast.add({severity:'success', summary: 'Сообщение', detail:'Данные записаны в БД...', life: 3000});
     },
 
+    async getvalues(){
+
+      if (this.karyer_name) {
+
+      this.$axios.get('/api/getval?karyer=' + this.karyer_name)
+        .then(response => {
+          this.modalTableList = response.data.data
+          this.isShowModal = true
+        })
+        .catch(error => {
+          this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 3000});
+        });
+
+      } else {
+        this.$toast.add({severity:'error', summary: 'Ошибка', detail:'Выберите карьер', life: 3000});
+      }
+
+
+    },
+
+    del_passport(row_data) {
+
+      this.$confirm.require({
+        message: 'Очистить данные файла: ' + row_data.file_name + '?',
+        header: 'Сообщение',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Да',
+        rejectLabel: 'Отмена',
+        accept: async () => {
+          try {
+            let data = {
+              'c_date': row_data.c_date,
+              'file_name': row_data.file_name,
+              'passport_name': row_data.passport_name
+            }
+
+            this.$axios.post('/api/deleteRows', data)
+              .then(response => {
+                this.$toast.add({severity:'info', summary: 'Сообщение', detail:'Данные файла: '+ row_data.file_name + ' очищены...', life: 3000});
+                this.getvalues()
+              })
+              .catch(error => {
+                this.$toast.add({severity:'error', summary: 'Ошибка', detail:error.response.data, life: 5000});
+              });
+
+          }
+          catch(err){
+            this.$toast.add({severity:'error', summary: 'Ошибка', detail:err, life: 3000});
+          }
+        },
+        reject: () => {
+          this.$toast.add({severity:'info', summary: 'Сообщение', detail:'Действие отменено пользователем', life: 3000});
+        }
+      });
+    }
 
   }
 
@@ -246,6 +303,25 @@ components: {
 <div>
   <Toast />
   <ConfirmDialog />
+  <Dialog header="Список загруженных паспортов" :visible.sync="isShowModal" :containerStyle="{width: '90vw'}" :modal="true">
+
+    <DataTable :value="modalTableList" showGridlines class="p-datatable-sm" :rowHover="true" :scrollable="true" scrollHeight="flex">
+      <Column field="file_name" header="Имя файла" :styles="{'min-width':'400px'}"></Column>
+      <Column field="c_date" header="Дата утверждения"></Column>
+      <Column field="passport_name" header="Паспорт"></Column>
+      <Column field="blok" header="Блок"></Column>
+      <Column field="qatlam" header="Гор."></Column>
+      <Column field="quduqlar_soni" header="Кол. скв."></Column>
+      <Column field="jami" header="Всего заряда в скважинах"></Column>
+      <Column field="kol_vo_boyevikov_vsego" header="Кол. боевиков всего"></Column>
+      <Column field="obyom_vzrivchatki" header="Объем ВМ"></Column>
+      <Column :styles="{'width':'20px'}">
+        <template #body="slotProps">
+          <Button icon="pi pi-trash" class="p-button-rounded p-button-warning" @click="del_passport(slotProps.data)" />
+        </template>
+      </Column>
+    </DataTable>
+  </Dialog>
 
   <div class="grid">
     <div class="col-4">
@@ -253,12 +329,12 @@ components: {
       <BlockUI :blocked="blockedPanel">
 
 
-      <Panel header="Log">
+      <Panel >
         <template #header>
           <div class="flex justify-content-between align-items-center w-full h-2rem">
-            <span>Импорт файлов</span>
+            <h4>Импорт файлов</h4>
             <div>
-              <Dropdown v-model="karyer_name" :options="karyer_list"  placeholder="Выберите карьер" />
+              <Dropdown v-model="karyer_name" :options="karyer_list"  placeholder="Выберите карьер" @change="send_fileList = []"/>
             </div>
             <div>
               <label class="input-file">
@@ -294,6 +370,16 @@ components: {
     </div>
     <div class="col-8">
       <Panel header="Обработанные файлы">
+        <template #header>
+          <div class="flex justify-content-between align-items-center w-full h-2rem">
+            <h4>Обработанные файлы</h4>
+            <div>
+              <Button label="Список загруженных паспортов" class="p-button-info" icon="pi pi-align-justify" iconPos="left" @click="getvalues"/>
+            </div>
+          </div>
+
+        </template>
+
       <div class="div_send_list h-full">
       <Accordion>
         <AccordionTab v-for="(file, index) in this.send_fileList" :key="index" >

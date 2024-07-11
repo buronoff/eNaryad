@@ -190,6 +190,26 @@ app.post('/deleteRows', (req, res) => {
     res.status(400).json({'status': 'Error', 'data': err})
   })
 });
+
+app.get('/getval', (req, res) => {
+  let karyer = req.query.karyer
+
+  let reqText = "exec dbo.sp_get_values '" + karyer + "'"
+
+  queryData(reqText).then(rows => {
+    var obj = rows
+    if (obj.data) {
+      res.status(200).json({'status': 'OK', 'data': obj.data})
+    } else {
+      res.status(400).json({'status': 'Error', 'data': obj.error.originalError.info.message})
+    }
+  }).catch((err)=> {
+    res.status(400).json({'status': 'Error', 'data': err})
+  })
+});
+
+
+
 async function readExcelFile(file) {
   let log = []
   // Читаем файл Excel

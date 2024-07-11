@@ -4,7 +4,7 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'export_bvr',
+    title: 'Экспорт паспортов БВР',
     htmlAttrs: {
       lang: 'ru',
       translate:  'no'
