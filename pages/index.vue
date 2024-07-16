@@ -1,15 +1,24 @@
 <template>
   <div>
-    <view_excel></view_excel>
+    <naryad_ekg></naryad_ekg>
 
 
   </div>
 </template>
 <script>
-import view_excel from '@/components/view_excel.vue'
+
+
+
+
+import naryad_ekg from '@/components/naryad_ekg'
+
+
 export default {
+
+  middleware: 'authenticated',
+
   components: {
-    view_excel
+    naryad_ekg
   }
 }
 </script>

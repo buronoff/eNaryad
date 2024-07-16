@@ -50,27 +50,18 @@ export default {
   ],
 
   auth: {
+
     strategies: {
+
       local: {
-        scheme: 'refresh',
-        token: {
-          property: 'access',
-          maxAge: 1800,
-          type: 'Bearer'
-        },
-        refreshToken: {
-          property: 'refresh',
-          data: 'refresh',
-          maxAge: 60 * 60 * 24 * 30
-        },
         endpoints: {
-          login: { url: '/api/token/', method: 'post' },
-          refresh: { url: '/api/refresh_token/', method: 'post' },
-          user: { url: '/api/profile/', method: 'get' },
-          logout: false
+          login: { url: '/api/auth/login/', method: 'post', propertyName: 'token'},
+          logout: { url: '/api/auth/logout/', method: 'post' },
+          user: { url: '/api/auth/user', method: 'get', propertyName: false },
         },
         tokenRequired: true,
-      }
+        tokenType: 'bearer',
+       }
     }
   },
 

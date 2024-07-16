@@ -294,6 +294,9 @@ async function readExcelFile(file) {
 
 /* АВТОРИЗАЦИЯ */
 app.post('/auth/login',auth_controller.login);
+app.post('/auth/logout',auth_controller.logout);
+app.post('/auth/create_login',auth_controller.create_login);
+app.get('/auth/user',auth_controller.user);
 
 
 export default {

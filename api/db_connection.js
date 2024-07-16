@@ -3,9 +3,9 @@ import sql from 'mssql'
 const dbDataConfig = {
   user: 'sa',
   password: '@Zarafshan*',
-  database: 'bvr',
-  server: 'BG-BURONOV',
-  //server: 'DESKTOP-GHDOBMJ',
+  database: 'db_tb',
+  //server: 'BG-BURONOV',
+  server: 'DESKTOP-GHDOBMJ',
   options: {
       encrypt: false, // for azure
       trustServerCertificate: true, // change to true for local dev / self-signed certs
@@ -24,6 +24,7 @@ const queryData = async (sqlQuery) => {
       return { data: result.recordset };
   } catch (err) {
       return { error: err };
+
   } finally {
       cPool.close(); // <-- closing connection in the end it's a key
   }

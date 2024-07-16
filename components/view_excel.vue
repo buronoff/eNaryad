@@ -16,6 +16,8 @@ import Dialog from 'primevue/dialog';
 
 export default  {
 
+
+
 components: {
   FileUpload,
   Toast,
@@ -292,6 +294,16 @@ components: {
           this.$toast.add({severity:'info', summary: 'Сообщение', detail:'Действие отменено пользователем', life: 3000});
         }
       });
+    },
+
+    async logout(){
+      try {
+        await this.$auth.logout();
+        this.$router.push('/login');
+      } catch (error) {
+        this.$toast.add({severity:'error', summary: 'Ошибка!', detail:error.response.data, life: 4000})
+      }
+
     }
 
   }
@@ -375,6 +387,12 @@ components: {
             <h4>Обработанные файлы</h4>
             <div>
               <Button label="Список загруженных паспортов" class="p-button-info" icon="pi pi-align-justify" iconPos="left" @click="getvalues"/>
+            </div>
+            <div>
+              <span>{{ $auth.loggedIn }}</span>
+            </div>
+            <div>
+              <Button label="Выход" class="p-button-info" icon="pi pi-align-justify" iconPos="left" @click="logout"/>
             </div>
           </div>
 

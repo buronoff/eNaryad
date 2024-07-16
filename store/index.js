@@ -24,7 +24,6 @@ export const actions = {
   },
 };
 
-
 /*
 
 обновление переменной: vm.$store.dispatch('update_podrazdeleniye_name', 'aaaaaaaaaaaa');
