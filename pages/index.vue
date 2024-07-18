@@ -15,7 +15,7 @@ import naryad_ekg from '@/components/naryad_ekg'
 
 export default {
 
-  middleware: 'authenticated',
+  //middleware: 'authenticated',
 
   components: {
     naryad_ekg

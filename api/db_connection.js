@@ -3,7 +3,7 @@ import sql from 'mssql'
 const dbDataConfig = {
   user: 'sa',
   password: '@Zarafshan*',
-  database: 'db_tb',
+  database: 'db_mssql',
   //server: 'BG-BURONOV',
   server: 'DESKTOP-GHDOBMJ',
   options: {
