@@ -1,6 +1,6 @@
 <template>
   <div>
-    <naryad_ekg></naryad_ekg>
+    <naryad></naryad>
 
 
   </div>
@@ -10,7 +10,7 @@
 
 
 
-import naryad_ekg from '@/components/naryad_ekg'
+import naryad from '@/components/naryad'
 
 
 export default {
@@ -18,7 +18,7 @@ export default {
   //middleware: 'authenticated',
 
   components: {
-    naryad_ekg
+    naryad
   }
 }
 </script>

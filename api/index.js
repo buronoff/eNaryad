@@ -21,6 +21,7 @@ app.get('/auth/user',auth_controller.user);
 /* НАРЯД АВТОСАМОСВАЛОВ */
 app.get('/get_api_dtsm_list',naryad_conrtoller.get_api_dtsm_list);
 app.get('/get_api_narayd_ac',naryad_conrtoller.get_api_narayd_ac);
+app.get('/get_uchastok',naryad_conrtoller.get_uchastok);
 
 export default {
   path: '/api',

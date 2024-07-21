@@ -1,7 +1,7 @@
 <template>
   <div>
 
-      <div v-if="sxod_vrn === null">
+      <div v-if="sxod_vrn_unix === 0">
         <div class="flex flex-row justify-content-between align-items-center p-1 h-2rem" style="background-color: #37B7C3; height: 2rem">
           <span>{{ ekg_numb }}</span>
         </div>
@@ -42,7 +42,9 @@
           <div style="padding: 5px">
               <span>{{ sxod_vrn }}</span>
               <br>
-              <span>{{ timeDuration_val }}</span>
+              <span>
+                    <Knob v-model="knob_value" valueTemplate="{value}ч." :min="0" :max="1" :step="0.1" :size="50" />
+              </span>
               <br>
               <span>{{ sxod }}</span>
           </div>
@@ -54,11 +56,17 @@
 </template>
 
 <script>
-
+import Knob from 'primevue/knob';
 export default {
+  components: {
+    Knob
+  },
+
   data(){
     return{
-      timeDuration_val: 'sss'
+      knob_value: 0,
+      knob_value_toView: 0,
+
     }
   },
 
@@ -67,27 +75,29 @@ export default {
     skl_list: { type: Array, required: false, default: []},
     ac_list: { type: Array, required: false, default: []},
     sxod_vrn: { type: String, required: false, default: ''},
+    sxod_vrn_unix: { type: Number, required: false, default: 0},
     sxod: { type: String, required: false, default: ''}
   },
 
 
-
-  computed: {
-
-  },
-
   methods: {
-    timeDuration(){
-      let dt = new Date()
-      let vr = dt.getTime()
-      this.timeDuration_val = dt.toLocaleTimeString()
+    timeDuration() {
+      let t_end = Math.floor(new Date().getTime() / 1000);
+      let t_start = this.sxod_vrn_unix
+      let diff = t_end - t_start
+      let hh = diff/3600
+      this.knob_value = hh.toFixed(1)
     },
+
+
+
 
 
   },
 
   created(){
-    setInterval(this.timeDuration, 1000)
+    this.timeDuration()
+    //setInterval(this.timeDuration, 1000)
   }
 
 }
