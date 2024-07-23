@@ -1,171 +1,68 @@
 <template>
   <div>
 
-      <div v-if="sxod_vrn_unix === 0">
-        <div class="flex flex-row justify-content-between align-items-center p-1 h-2rem" style="background-color: #37B7C3; height: 2rem">
-          <span>{{ ekg_numb }}</span>
-        </div>
 
-        <div class="flex align-items-center flex-wrap text-xs p-1" style="background-color: #eef6fb; border-bottom: 1px solid #088395; height: 3rem">
-          <div v-for="skl in skl_list">
-              <span class="skl_label_deactiv" v-if="skl.vrk !== null" >
-                <b>{{ skl.skl }}</b><sup>&nbsp;{{ skl.vrn }}-{{ skl.vrk }}</sup>
-              </span>
-            <span class="skl_label" v-else>
-                <b>{{ skl.skl }}</b><sup>&nbsp;{{ skl.vrn }}-</sup>
-              </span>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap mt-1" >
-          <div class="active_ac shadow-1" v-for="ac in ac_list" v-if="ac !== null">
-            <span> {{ ac }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div v-else>
-        <div class="flex flex-row justify-content-between align-items-center p-1 h-2rem" style="background-color: #FF7777; height: 2rem">
-          <span>{{ ekg_numb }}</span>
-        </div>
-
-        <div class="flex align-items-center flex-wrap text-xs p-1" style="background-color: #e0f6f8; border-bottom: 1px solid #088395; height: 3rem">
-          <div v-for="skl in skl_list">
-              <span class="skl_label_deactiv" v-if="skl.vrk !== null" >
-                <b>{{ skl.skl }}</b><sup>&nbsp;{{ skl.vrn }}-{{ skl.vrk }}</sup>
-              </span>
-              <span class="skl_label" v-else>
-                <b>{{ skl.skl }}</b><sup>&nbsp;{{ skl.vrn }}-</sup>
-              </span>
-          </div>
-          </div>
-          <div style="padding: 5px">
-              <span>{{ sxod_vrn }}</span>
-              <br>
-                <div :class="knob_class">
-                  <span>{{ knob_label }}</span>
-                    <div class="left-half-clipper">
-                      <div class="first50-bar"></div>
-                    <div class="value-bar"></div>
-                  </div>
-                </div>
-              <br>
-              <span>{{ sxod }}</span>
-          </div>
+      <div :class="v_class">
+        <span>{{ value }}</span>
+        <div class="left-half-clipper">
+          <div class="first50-bar"></div>
+          <div class="value-bar"></div>
         </div>
       </div>
 
 
 
+
+  </div>
 </template>
 
 <script>
-import Knob from 'primevue/knob';
-
 export default {
-  components: {
-    Knob
+  props:{
+    val_label: { type: String, required: true, default: '' },
+    value: { type: Number, required: true, default: 0 },
   },
 
-  data(){
+  data() {
     return{
-      knob_value: null,
-      knob_label: null,
-      knob_class: null
+      v_class:''
     }
   },
 
-  props: {
-    ekg_numb: { type: String, required: true },
-    skl_list: { type: Array, required: false, default: []},
-    ac_list: { type: Array, required: false, default: []},
-    sxod_vrn: { type: String, required: false, default: ''},
-    sxod_vrn_unix: { type: Number, required: false, default: 0},
-    sxod: { type: String, required: false, default: ''}
-  },
-
-
   methods: {
-    timeDuration() {
-      let t_end = Math.floor(new Date().getTime() / 1000);
-      let t_start = this.sxod_vrn_unix
-      let diff = (t_end - t_start) - 359160
-      let hh = diff/3600
-      if (hh <= 1 ) {
-        this.knob_value = (hh*100).toFixed(0)
-        this.knob_label = String((hh*60).toFixed(0)) + 'мин.'
-      } else {
-        this.knob_value = 100
-        this.knob_label = String(hh.toFixed(1)) + 'ч.'
-      }
-
+    async renderKnob(){
       let p_array = ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28','p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46','p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64','p65','p66','p67','p68','p69','p70','p71','p72','p73','p74','p75','p76','p77','p78','p79','p80','p81','p82','p83','p84','p85','p86','p87','p88','p89','p90','p91','p92','p93','p94','p95','p96','p97','p98','p99','p100']
-      if (this.knob_value <= 50) {
-        this.knob_class = 'progress-circle ' + p_array[this.knob_value-1]
+      let val = this.value
+      if (val <= 50) {
+        this.v_class = 'progress-circle p' + p_array[val-1]
       } else {
-        this.knob_class = 'progress-circle over50 ' + p_array[this.knob_value-1]
+        this.v_class = 'progress-circle over50 p' + p_array[val-1]
       }
-
-
     },
-
-
-
   },
 
-  created(){
-    setInterval(this.timeDuration, 1000)
+  watch: {
+    value(){
+     this.renderKnob()
+    }
   }
-
 }
 </script>
 
 <style>
 
-
-.skl_label {
-  padding: 2px 4px;
-  color: #4F6F52;
-  font-family: 'Tahoma'
-}
-
-.skl_label_deactiv {
-  padding: 2px 4px;
-  color: #B5C0D0;
-  font-family: 'Tahoma'
-}
-
-.active_ac {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #36BA98;
-  border: 1px solid #379777;
-  color: white;
-  font-weight: normal;
-  width:40px;
-  height:40px;
-  border-radius: 20px;
-  margin: 5px;
-}
-
-
-
-
-/*---------knob-----------*/
 .progress-circle {
-  font-size: 12px;
-  margin: 0px;
+  font-size: 20px;
+  margin: 20px;
   position: relative; /* so that children can be absolutely positioned */
   padding: 0;
-  width: 3em;
-  height: 3em;
+  width: 5em;
+  height: 5em;
   background-color: #F2E9E1;
   border-radius: 50%;
-  line-height: 3em;
+  line-height: 5em;
 }
-/*
+
 .progress-circle:after{
   border: none;
   position: absolute;
@@ -179,27 +76,24 @@ export default {
   background-color: white;
   content: " ";
 }
-*/
 /* Text inside the control */
 .progress-circle span {
   position: absolute;
-  line-height: 3em;
-  width: 3em;
+  line-height: 5em;
+  width: 5em;
   text-align: center;
   display: block;
   color: #53777A;
   z-index: 2;
 }
-
 .left-half-clipper {
   /* a round circle */
   border-radius: 50%;
-  width: 3em;
-  height: 3em;
+  width: 5em;
+  height: 5em;
   position: absolute; /* needed for clipping */
-  clip: rect(0, 3em, 3em, 1.5em); /* clips the whole left half*/
+  clip: rect(0, 5em, 5em, 2.5em); /* clips the whole left half*/
 }
-
 /* when p>50, don't clip left half*/
 .progress-circle.over50 .left-half-clipper {
   clip: rect(auto,auto,auto,auto);
@@ -209,9 +103,9 @@ export default {
   then it is cut to display only the left half, then rotated clockwise
   to escape the outer clipping path.*/
   position: absolute; /*needed for clipping*/
-  clip: rect(0, 1.5em, 3em, 0);
-  width: 3em;
-  height: 3em;
+  clip: rect(0, 2.5em, 5em, 0);
+  width: 5em;
+  height: 5em;
   border-radius: 50%;
   border: 0.45em solid red; /*The border is 0.35 but making it larger removes visual artifacts */
   /*background-color: #4D642D;*/ /* for debug */
@@ -222,11 +116,11 @@ export default {
 .progress-circle.over50 .first50-bar {
   /*Progress bar for the first 50%, filling the whole right half*/
   position: absolute; /*needed for clipping*/
-  clip: rect(0, 3em, 3em, 1.5em);
+  clip: rect(0, 5em, 5em, 2.5em);
   background-color: red;
   border-radius: 50%;
-  width: 3em;
-  height: 3em;
+  width: 5em;
+  height: 5em;
 }
 .progress-circle:not(.over50) .first50-bar{ display: none; }
 
