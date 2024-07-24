@@ -88,6 +88,7 @@ export default {
     sxod_vrn: { type: String, required: false, default: ''},
     sxod_vrn_unix: { type: Number, required: false, default: 0},
     sxod: { type: String, required: false, default: ''}
+
   },
 
 
