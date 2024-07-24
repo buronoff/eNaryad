@@ -39,19 +39,23 @@
               </span>
           </div>
           </div>
-          <div style="padding: 5px">
-              <span>{{ sxod_vrn }}</span>
-              <br>
-                <div :class="knob_class">
-                  <span>{{ knob_label }}</span>
-                    <div class="left-half-clipper">
-                      <div class="first50-bar"></div>
-                    <div class="value-bar"></div>
-                  </div>
-                </div>
-              <br>
-              <span>{{ sxod }}</span>
-          </div>
+          <div class="flex flex-column">
+            <div class="flex justify-content-around align-items-center">
+              <div><span style="color: red">{{ sxod_vrn }}</span></div>
+              <div>
+
+                <svg width="60" height="60">
+                  <circle class="progress-ring_circle" :style="knob_style" fill="transparent" stroke="red" stroke-width="6" cx=30 cy="30" r="22" />
+                  <text x="16" y="34" class="progress-ring_circle_label">{{knob_label}}</text>
+                  <!--radius = (width/2) - (stroke-width * 2)-->
+                </svg>
+
+              </div>
+            </div>
+            <div>
+              <span style="font-size: 0.9em; color: indianred">{{ sxod }}</span>
+            </div>
+           </div>
         </div>
       </div>
 
@@ -61,17 +65,19 @@
 
 <script>
 import Knob from 'primevue/knob';
+import knob_time from '@/components/knob_time'
 
 export default {
   components: {
-    Knob
+    Knob,
+    knob_time
   },
 
   data(){
     return{
       knob_value: null,
       knob_label: null,
-      knob_class: null
+      knob_style: null
     }
   },
 
@@ -89,27 +95,25 @@ export default {
     timeDuration() {
       let t_end = Math.floor(new Date().getTime() / 1000);
       let t_start = this.sxod_vrn_unix
-      let diff = (t_end - t_start) - 359160
+      let diff = (t_end - t_start) - 444470
       let hh = diff/3600
-      if (hh <= 1 ) {
+      if (hh < 1 ) {
         this.knob_value = (hh*100).toFixed(0)
-        this.knob_label = String((hh*60).toFixed(0)) + 'мин.'
+        this.knob_label = String((hh*60).toFixed(0)) + 'м.'
       } else {
         this.knob_value = 100
         this.knob_label = String(hh.toFixed(1)) + 'ч.'
       }
 
-      let p_array = ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10','p11','p12','p13','p14','p15','p16','p17','p18','p19','p20','p21','p22','p23','p24','p25','p26','p27','p28','p29','p30','p31','p32','p33','p34','p35','p36','p37','p38','p39','p40','p41','p42','p43','p44','p45','p46','p47','p48','p49','p50','p51','p52','p53','p54','p55','p56','p57','p58','p59','p60','p61','p62','p63','p64','p65','p66','p67','p68','p69','p70','p71','p72','p73','p74','p75','p76','p77','p78','p79','p80','p81','p82','p83','p84','p85','p86','p87','p88','p89','p90','p91','p92','p93','p94','p95','p96','p97','p98','p99','p100']
-      if (this.knob_value <= 50) {
-        this.knob_class = 'progress-circle ' + p_array[this.knob_value-1]
-      } else {
-        this.knob_class = 'progress-circle over50 ' + p_array[this.knob_value-1]
-      }
+      const percent = this.knob_value
 
-
+      const circle = document.querySelector('.progress-ring_circle');
+      const radius = circle.r.baseVal.value;
+      const circumference = 2 * Math.PI * radius;
+      circle.style.strokeDasharray = `${circumference} ${circumference}`;
+      const offset = circumference - percent/100 * circumference;
+      this.knob_style = "stroke-dashoffset: "+offset
     },
-
-
 
   },
 
@@ -150,188 +154,15 @@ export default {
   margin: 5px;
 }
 
-
-
-
-/*---------knob-----------*/
-.progress-circle {
-  font-size: 12px;
-  margin: 0px;
-  position: relative; /* so that children can be absolutely positioned */
-  padding: 0;
-  width: 3em;
-  height: 3em;
-  background-color: #F2E9E1;
-  border-radius: 50%;
-  line-height: 3em;
-}
-/*
-.progress-circle:after{
-  border: none;
-  position: absolute;
-  top: 0.35em;
-  left: 0.35em;
-  text-align: center;
-  display: block;
-  border-radius: 50%;
-  width: 4.3em;
-  height: 4.3em;
-  background-color: white;
-  content: " ";
-}
-*/
-/* Text inside the control */
-.progress-circle span {
-  position: absolute;
-  line-height: 3em;
-  width: 3em;
-  text-align: center;
-  display: block;
-  color: #53777A;
-  z-index: 2;
+.progress-ring_circle {
+  transform-origin: center;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 0.5s;
 }
 
-.left-half-clipper {
-  /* a round circle */
-  border-radius: 50%;
-  width: 3em;
-  height: 3em;
-  position: absolute; /* needed for clipping */
-  clip: rect(0, 3em, 3em, 1.5em); /* clips the whole left half*/
+.progress-ring_circle_label {
+  font-size: 0.8em
 }
 
-/* when p>50, don't clip left half*/
-.progress-circle.over50 .left-half-clipper {
-  clip: rect(auto,auto,auto,auto);
-}
-.value-bar {
-  /*This is an overlayed square, that is made round with the border radius,
-  then it is cut to display only the left half, then rotated clockwise
-  to escape the outer clipping path.*/
-  position: absolute; /*needed for clipping*/
-  clip: rect(0, 1.5em, 3em, 0);
-  width: 3em;
-  height: 3em;
-  border-radius: 50%;
-  border: 0.45em solid red; /*The border is 0.35 but making it larger removes visual artifacts */
-  /*background-color: #4D642D;*/ /* for debug */
-  box-sizing: border-box;
-
-}
-/* Progress bar filling the whole right half for values above 50% */
-.progress-circle.over50 .first50-bar {
-  /*Progress bar for the first 50%, filling the whole right half*/
-  position: absolute; /*needed for clipping*/
-  clip: rect(0, 3em, 3em, 1.5em);
-  background-color: red;
-  border-radius: 50%;
-  width: 3em;
-  height: 3em;
-}
-.progress-circle:not(.over50) .first50-bar{ display: none; }
-
-
-/* Progress bar rotation position */
-.progress-circle.p0 .value-bar { display: none; }
-.progress-circle.p1 .value-bar { transform: rotate(4deg); }
-.progress-circle.p2 .value-bar { transform: rotate(7deg); }
-.progress-circle.p3 .value-bar { transform: rotate(11deg); }
-.progress-circle.p4 .value-bar { transform: rotate(14deg); }
-.progress-circle.p5 .value-bar { transform: rotate(18deg); }
-.progress-circle.p6 .value-bar { transform: rotate(22deg); }
-.progress-circle.p7 .value-bar { transform: rotate(25deg); }
-.progress-circle.p8 .value-bar { transform: rotate(29deg); }
-.progress-circle.p9 .value-bar { transform: rotate(32deg); }
-.progress-circle.p10 .value-bar { transform: rotate(36deg); }
-.progress-circle.p11 .value-bar { transform: rotate(40deg); }
-.progress-circle.p12 .value-bar { transform: rotate(43deg); }
-.progress-circle.p13 .value-bar { transform: rotate(47deg); }
-.progress-circle.p14 .value-bar { transform: rotate(50deg); }
-.progress-circle.p15 .value-bar { transform: rotate(54deg); }
-.progress-circle.p16 .value-bar { transform: rotate(58deg); }
-.progress-circle.p17 .value-bar { transform: rotate(61deg); }
-.progress-circle.p18 .value-bar { transform: rotate(65deg); }
-.progress-circle.p19 .value-bar { transform: rotate(68deg); }
-.progress-circle.p20 .value-bar { transform: rotate(72deg); }
-.progress-circle.p21 .value-bar { transform: rotate(76deg); }
-.progress-circle.p22 .value-bar { transform: rotate(79deg); }
-.progress-circle.p23 .value-bar { transform: rotate(83deg); }
-.progress-circle.p24 .value-bar { transform: rotate(86deg); }
-.progress-circle.p25 .value-bar { transform: rotate(90deg); }
-.progress-circle.p26 .value-bar { transform: rotate(94deg); }
-.progress-circle.p27 .value-bar { transform: rotate(97deg); }
-.progress-circle.p28 .value-bar { transform: rotate(101deg); }
-.progress-circle.p29 .value-bar { transform: rotate(104deg); }
-.progress-circle.p30 .value-bar { transform: rotate(108deg); }
-.progress-circle.p31 .value-bar { transform: rotate(112deg); }
-.progress-circle.p32 .value-bar { transform: rotate(115deg); }
-.progress-circle.p33 .value-bar { transform: rotate(119deg); }
-.progress-circle.p34 .value-bar { transform: rotate(122deg); }
-.progress-circle.p35 .value-bar { transform: rotate(126deg); }
-.progress-circle.p36 .value-bar { transform: rotate(130deg); }
-.progress-circle.p37 .value-bar { transform: rotate(133deg); }
-.progress-circle.p38 .value-bar { transform: rotate(137deg); }
-.progress-circle.p39 .value-bar { transform: rotate(140deg); }
-.progress-circle.p40 .value-bar { transform: rotate(144deg); }
-.progress-circle.p41 .value-bar { transform: rotate(148deg); }
-.progress-circle.p42 .value-bar { transform: rotate(151deg); }
-.progress-circle.p43 .value-bar { transform: rotate(155deg); }
-.progress-circle.p44 .value-bar { transform: rotate(158deg); }
-.progress-circle.p45 .value-bar { transform: rotate(162deg); }
-.progress-circle.p46 .value-bar { transform: rotate(166deg); }
-.progress-circle.p47 .value-bar { transform: rotate(169deg); }
-.progress-circle.p48 .value-bar { transform: rotate(173deg); }
-.progress-circle.p49 .value-bar { transform: rotate(176deg); }
-.progress-circle.p50 .value-bar { transform: rotate(180deg); }
-.progress-circle.p51 .value-bar { transform: rotate(184deg); }
-.progress-circle.p52 .value-bar { transform: rotate(187deg); }
-.progress-circle.p53 .value-bar { transform: rotate(191deg); }
-.progress-circle.p54 .value-bar { transform: rotate(194deg); }
-.progress-circle.p55 .value-bar { transform: rotate(198deg); }
-.progress-circle.p56 .value-bar { transform: rotate(202deg); }
-.progress-circle.p57 .value-bar { transform: rotate(205deg); }
-.progress-circle.p58 .value-bar { transform: rotate(209deg); }
-.progress-circle.p59 .value-bar { transform: rotate(212deg); }
-.progress-circle.p60 .value-bar { transform: rotate(216deg); }
-.progress-circle.p61 .value-bar { transform: rotate(220deg); }
-.progress-circle.p62 .value-bar { transform: rotate(223deg); }
-.progress-circle.p63 .value-bar { transform: rotate(227deg); }
-.progress-circle.p64 .value-bar { transform: rotate(230deg); }
-.progress-circle.p65 .value-bar { transform: rotate(234deg); }
-.progress-circle.p66 .value-bar { transform: rotate(238deg); }
-.progress-circle.p67 .value-bar { transform: rotate(241deg); }
-.progress-circle.p68 .value-bar { transform: rotate(245deg); }
-.progress-circle.p69 .value-bar { transform: rotate(248deg); }
-.progress-circle.p70 .value-bar { transform: rotate(252deg); }
-.progress-circle.p71 .value-bar { transform: rotate(256deg); }
-.progress-circle.p72 .value-bar { transform: rotate(259deg); }
-.progress-circle.p73 .value-bar { transform: rotate(263deg); }
-.progress-circle.p74 .value-bar { transform: rotate(266deg); }
-.progress-circle.p75 .value-bar { transform: rotate(270deg); }
-.progress-circle.p76 .value-bar { transform: rotate(274deg); }
-.progress-circle.p77 .value-bar { transform: rotate(277deg); }
-.progress-circle.p78 .value-bar { transform: rotate(281deg); }
-.progress-circle.p79 .value-bar { transform: rotate(284deg); }
-.progress-circle.p80 .value-bar { transform: rotate(288deg); }
-.progress-circle.p81 .value-bar { transform: rotate(292deg); }
-.progress-circle.p82 .value-bar { transform: rotate(295deg); }
-.progress-circle.p83 .value-bar { transform: rotate(299deg); }
-.progress-circle.p84 .value-bar { transform: rotate(302deg); }
-.progress-circle.p85 .value-bar { transform: rotate(306deg); }
-.progress-circle.p86 .value-bar { transform: rotate(310deg); }
-.progress-circle.p87 .value-bar { transform: rotate(313deg); }
-.progress-circle.p88 .value-bar { transform: rotate(317deg); }
-.progress-circle.p89 .value-bar { transform: rotate(320deg); }
-.progress-circle.p90 .value-bar { transform: rotate(324deg); }
-.progress-circle.p91 .value-bar { transform: rotate(328deg); }
-.progress-circle.p92 .value-bar { transform: rotate(331deg); }
-.progress-circle.p93 .value-bar { transform: rotate(335deg); }
-.progress-circle.p94 .value-bar { transform: rotate(338deg); }
-.progress-circle.p95 .value-bar { transform: rotate(342deg); }
-.progress-circle.p96 .value-bar { transform: rotate(346deg); }
-.progress-circle.p97 .value-bar { transform: rotate(349deg); }
-.progress-circle.p98 .value-bar { transform: rotate(353deg); }
-.progress-circle.p99 .value-bar { transform: rotate(356deg); }
-.progress-circle.p100 .value-bar { transform: rotate(360deg); }
 
 </style>
