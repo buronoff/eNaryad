@@ -1,7 +1,34 @@
 <template>
   <div>
+      <Toast/>
 
-      <div v-if="sxod_vrn_unix === 0">
+    <Dialog header="Переадресация автосамовала" :visible.sync="modal_pereadresaciya_show" :containerStyle="{width: '30vw'}" :modal="true" :closable="false">
+      <div class="flex flex-row justify-content-between align-items-center">
+        <div style="font-size: 1.1em"><span>Пункт погрузки № </span><span class="font-bold">{{drop_ekg}}</span></div>
+        <div style="font-size: 1.1em"><span>=></span>  </div>
+        <div style="font-size: 1.1em"><span>Автосамосвал № </span><span class="font-bold">{{drag_ac}}</span>  </div>
+
+        <div>
+          <InputText type="time" class="p-inputtext-sm" placeholder="Small" autofocus/>
+        </div>
+      </div>
+
+<!--      <div class="grid">-->
+<!--        <div class="col"><span>Пункт погрузки № </span><span class="font-bold">{{drop_ekg}}</span></div>-->
+<!--        <div class="col"><span>Автосамосвал № </span><span class="font-bold">{{drag_ac}}</span></div>-->
+<!--        <div class="col"><InputText type="time" class="p-inputtext-sm" placeholder="Small" /></div>-->
+<!--        <div class="col"><Button label="Small" icon="pi pi-check" class="p-button-sm"/></div>-->
+<!--      </div>-->
+
+
+      <template #footer>
+        <Button label="No" icon="pi pi-times" @click="to_hide_modal_pereadresaciya_show" class="p-button-sm p-button-text"/>
+        <Button label="Yes" icon="pi pi-check" @click="" class="p-button-sm" />
+      </template>
+    </Dialog>
+
+
+      <div v-if="sxod_vrn_unix === 0" @drop="onDrop($event, ekg_numb)" @dragover.prevent  @dragenter.prevent>
         <div class="flex flex-row justify-content-between align-items-center p-1 h-2rem" style="background-color: #37B7C3; height: 2rem">
           <span>{{ ekg_numb }}</span>
         </div>
@@ -18,8 +45,8 @@
         </div>
 
         <div class="flex flex-wrap mt-1" >
-          <div class="active_ac shadow-1" v-for="ac in ac_list" v-if="ac !== null">
-            <span> {{ ac }}</span>
+          <div class="active_ac shadow-1" v-for="ac in ac_list" v-if="ac !== null" draggable="true" @dragstart="startDrag($event, ac)" @dragend="endDrag($event, ac)">
+            <span>{{ ac }}</span>
           </div>
         </div>
       </div>
@@ -45,14 +72,15 @@
               <div>
 
                 <svg width="60" height="60">
-                  <circle class="progress-ring_circle" :style="knob_style" fill="transparent" stroke="red" stroke-width="6" cx=30 cy="30" r="22" />
-                  <text x="16" y="34" class="progress-ring_circle_label">{{knob_label}}</text>
+                  <circle fill="transparent" stroke="#F8EDED" stroke-width="6" cx=30 cy="30" r="22" style="z-index: -7;" />
+                  <circle class="progress-ring_circle" :style="knob_style" fill="transparent" :stroke="knob_stroke_color" stroke-width="6" cx=30 cy="30" r="22" />
+                  <text x="14" y="35" class="progress-ring_circle_label">{{knob_label}}</text>
                   <!--radius = (width/2) - (stroke-width * 2)-->
                 </svg>
 
               </div>
             </div>
-            <div>
+            <div class="pl-2 pr-2 pb-2">
               <span style="font-size: 0.9em; color: indianred">{{ sxod }}</span>
             </div>
            </div>
@@ -64,20 +92,32 @@
 </template>
 
 <script>
-import Knob from 'primevue/knob';
-import knob_time from '@/components/knob_time'
+import Dialog from 'primevue/dialog';
+import Button from 'primevue/button';
+import Toast from 'primevue/toast';
+import InputText from 'primevue/inputtext';
 
 export default {
+
   components: {
-    Knob,
-    knob_time
+    Dialog,
+    Button,
+    Toast,
+    InputText
+
   },
 
   data(){
     return{
-      knob_value: null,
+      knob_value: 0,
       knob_label: null,
-      knob_style: null
+      knob_style: null,
+      knob_stroke_color: '#FF0000',
+      drag_ac: null,
+      drop_ekg: null,
+
+      modal_pereadresaciya_show: false,
+
     }
   },
 
@@ -93,17 +133,44 @@ export default {
 
 
   methods: {
+
+    startDrag (event, ac) {
+      event.dataTransfer.dropEffect = 'move';
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('ac_numb', ac);
+    },
+
+    endDrag (event, ac) {
+      this.drag_ac = event.dataTransfer.getData('ac_numb')
+      this.modal_pereadresaciya_show = true
+      // let index = this.ac_list.indexOf(ac)
+      // this.ac_list.splice(index, 1)
+    },
+
+    onDrop(event, ekg) {
+      this.drop_ekg = ekg
+//      this.ac_list.push(this.drag_ac)
+
+    },
+
+    to_hide_modal_pereadresaciya_show(){
+      this.modal_pereadresaciya_show = false
+    },
+
     timeDuration() {
+      let val = 0
+      let label = ''
+
       let t_end = Math.floor(new Date().getTime() / 1000);
       let t_start = this.sxod_vrn_unix
-      let diff = (t_end - t_start) - 444470
+      let diff = (t_end - t_start) - 675640
       let hh = diff/3600
       if (hh < 1 ) {
-        this.knob_value = (hh*100).toFixed(0)
-        this.knob_label = String((hh*60).toFixed(0)) + 'м.'
+        val = (hh*100).toFixed(0)
+        label = String((hh*60).toFixed(0)) + 'м.'
       } else {
-        this.knob_value = 100
-        this.knob_label = String(hh.toFixed(1)) + 'ч.'
+        val = 100
+        label = String(hh.toFixed(1)) + 'ч.'
       }
 
       const percent = this.knob_value
@@ -113,13 +180,23 @@ export default {
       const circumference = 2 * Math.PI * radius;
       circle.style.strokeDasharray = `${circumference} ${circumference}`;
       const offset = circumference - percent/100 * circumference;
+
       this.knob_style = "stroke-dashoffset: "+offset
+
+      if (this.knob_value > 0 && this.knob_value <= 25) {this.knob_stroke_color = '#FFCAD4'}
+      if (this.knob_value > 25 && this.knob_value <= 50) {this.knob_stroke_color = '#E78895'}
+      if (this.knob_value > 50 && this.knob_value <= 75) {this.knob_stroke_color = '#FF6868'}
+      if (this.knob_value > 75 && this.knob_value <= 100) {this.knob_stroke_color = '#FC4100'}
+
+      this.knob_value = val
+      this.knob_label = label
+
     },
 
   },
 
   created(){
-    setInterval(this.timeDuration, 1000)
+    setInterval(this.timeDuration, 1000);
   }
 
 }
@@ -158,7 +235,7 @@ export default {
 .progress-ring_circle {
   transform-origin: center;
   transform: rotate(-90deg);
-  transition: stroke-dashoffset 0.5s;
+  transition: stroke-dashoffset 0.1s;
 }
 
 .progress-ring_circle_label {
